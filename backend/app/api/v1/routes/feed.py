@@ -1,6 +1,6 @@
 from fastapi import APIRouter,  HTTPException
-from app.models.feed import FeedRequest, FeedResponse
-from app.services.feed_service import process_feed
+from backend.app.models.feed import FeedRequest, FeedResponse
+from backend.app.services.feed_service import process_feed
 
 router = APIRouter(prefix="/feed")
 

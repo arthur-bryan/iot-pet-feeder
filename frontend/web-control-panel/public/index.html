@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pet Feeder Control</title>
+    <!-- Link to external Tailwind CSS (compiled) -->
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-4xl font-extrabold text-gray-900 mb-8">Smart Pet Feeder</h1>
+
+        <!-- Feed Now Section -->
+        <div class="mb-8 p-6 bg-indigo-50 rounded-lg shadow-inner">
+            <h2 class="text-2xl font-bold text-indigo-800 mb-4">Manual Feed</h2>
+            <button id="feedButton" class="button-primary w-full text-lg">
+                <svg class="inline-block w-6 h-6 mr-2 -mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.828 0L6.343 16.657m10.614-10.614L13.414 3.1a1.998 1.998 0 00-2.828 0L6.343 6.657m-4.004 4.004a5.001 5.001 0 009.992 0h-9.992zm14.004 0a5.001 5.001 0 00-9.992 0h9.992z"></path></svg>
+                Feed Now!
+            </button>
+            <p id="feedMessage" class="text-sm text-gray-600 mt-3"></p>
+        </div>
+    </div>
+
+    <!-- Link to external JavaScript file -->
+    <script src="js/main.js"></script>
+</body>
+</html>

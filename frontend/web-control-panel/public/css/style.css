@@ -1,0 +1,56 @@
+/* public/css/style.css */
+/* Tailwind CSS utilities - typically compiled or linked via CDN */
+/* For this example, we'll include the CDN directly in HTML for simplicity,
+   but in a real build, you'd compile Tailwind into this file. */
+
+/* Basic reset and font application */
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f3f4f6; /* Light gray background */
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; /* Align to top for better scroll behavior */
+    min-height: 100vh;
+    padding: 2rem; /* Add padding for mobile */
+}
+
+/* Container styling */
+.container {
+    background-color: #ffffff;
+    padding: 2rem;
+    border-radius: 0.75rem; /* rounded-xl */
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    max-width: 400px; /* Adjusted max-width for simpler layout */
+    width: 100%;
+    text-align: center;
+}
+
+/* Primary button styling */
+.button-primary {
+    background-color: #4f46e5; /* Indigo 600 */
+    color: white;
+    padding: 0.75rem 1.5rem; /* py-3 px-6 */
+    border-radius: 0.5rem; /* rounded-lg */
+    font-weight: 600; /* font-semibold */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06); /* shadow-md */
+    transition: all 0.2s ease-in-out;
+    cursor: pointer;
+    width: 100%;
+    font-size: 1.125rem; /* text-lg */
+    border: none; /* Remove default button border */
+}
+
+.button-primary:hover {
+    background-color: #4338ca; /* Indigo 700 */
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
+}
+
+.button-primary:active {
+    background-color: #3730a3; /* Indigo 800 */
+    box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06); /* shadow-inner */
+}
+
+.button-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

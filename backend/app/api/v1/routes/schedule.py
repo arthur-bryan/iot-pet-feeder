@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from app.models.schedule import ScheduleRequest, ScheduleResponse
-from app.services.feed_service import create_schedule
+from backend.app.models.schedule import ScheduleRequest, ScheduleResponse
+from backend.app.services.feed_service import create_schedule
 
 router = APIRouter(prefix="/schedule")
 

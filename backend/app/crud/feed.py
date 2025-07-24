@@ -1,10 +1,10 @@
 from datetime import datetime
 from uuid import uuid4
 
-from app.models.feed import FeedRequest
-from app.models.schedule import ScheduleRequest
+from backend.app.models.feed import FeedRequest
+from backend.app.models.schedule import ScheduleRequest
 
-from app.db.client import get_feed_history_table, get_feed_schedule_table
+from backend.app.db.client import get_feed_history_table, get_feed_schedule_table
 
 
 def save_feed_event(

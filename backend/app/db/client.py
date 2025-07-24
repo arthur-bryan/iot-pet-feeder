@@ -1,5 +1,5 @@
 import boto3
-from app.core.config import settings
+from backend.app.core.config import settings
 
 
 def get_dynamodb_resource():

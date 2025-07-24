@@ -2,7 +2,7 @@ import boto3
 import json
 from botocore.exceptions import BotoCoreError, ClientError
 from typing import Literal
-from app.core.config import settings
+from backend.app.core.config import settings
 
 iot_client = boto3.client("iot-data", region_name=settings.AWS_REGION)
 

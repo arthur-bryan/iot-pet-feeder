@@ -4,7 +4,7 @@ name: Backend CI/CD
 on:
   push:
     branches:
-      - dev 
+      - dev # Changed from 'main' as per your setup
     paths:
       - 'backend/**' # Only trigger if backend files change
       - 'infra/terraform/environments/dev/**' # Or if dev environment Terraform changes
@@ -12,8 +12,8 @@ on:
   workflow_dispatch: # Allows manual triggering from GitHub UI
 
 env:
-  AWS_REGION: us-east-2 
-  PROJECT_NAME: iot-pet-feeder 
+  AWS_REGION: us-east-2 # Changed from 'sa-east-1' as per your setup
+  PROJECT_NAME: iot-pet-feeder # Changed from 'pet-feeder' as per your setup
   # Terraform Backend Configuration (must match setup_tf_backend.sh)
   TF_STATE_BUCKET_NAME: ${{ secrets.TF_STATE_BUCKET_NAME }}
   TF_LOCK_TABLE_NAME: ${{ secrets.TF_LOCK_TABLE_NAME }}
@@ -36,13 +36,13 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12' # Use the same Python version as your Lambda runtime
+          python-version: '3.12' # Changed from '3.9' as per your setup
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }} # Corrected secret name
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Install AWS CLI (if not pre-installed)
@@ -52,7 +52,7 @@ jobs:
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.12.2
+          terraform_version: 1.12.2 # Changed from '1.x.x' as per your setup
 
       - name: Create Build Directory
         run: mkdir -p ${{ env.BUILD_DIR }}
@@ -116,12 +116,11 @@ jobs:
             -var="build_dir=${{ env.BUILD_DIR }}" \
             -var="api_lambda_zip_name=${{ env.API_LAMBDA_ZIP_NAME }}" \
             -var="status_lambda_zip_name=${{ env.STATUS_LAMBDA_ZIP_NAME }}" \
+            -var="github_token=${{ secrets.AMPLIFY_GITHUB_TOKEN }}" # <<< ADDED THIS
             -out=tfplan
-        # No need to pass iot_endpoint as a var; it's fetched by a data source in main.tf
 
       - name: Terraform Apply
         id: apply
         run: |
           cd infra/terraform/environments/${{ env.TF_ENVIRONMENT }}
           terraform apply -auto-approve tfplan
-        # No need to pass iot_endpoint as a var; it's fetched by a data source in main.tf

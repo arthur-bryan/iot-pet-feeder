@@ -1,11 +1,11 @@
-from fastapi import APIRouter,  HTTPException
-from backend.app.models.feed import FeedRequest, FeedResponse
-from backend.app.services.feed_service import process_feed
+from fastapi import APIRouter, HTTPException, Query
+from app.models.feed import FeedRequest, FeedResponse
+from app.services.feed_service import process_feed, get_feed_history
+from typing import List, Dict, Any
 
-router = APIRouter(prefix="/feed")
+router = APIRouter()
 
-
-@router.post("/", response_model=FeedResponse)
+@router.post("/feed/", response_model=FeedResponse) # This will now be POST /api/v1/feed/
 async def on_demand(request: FeedRequest):
     try:
         result = await process_feed(request)
@@ -13,8 +13,13 @@ async def on_demand(request: FeedRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
-@router.get("/")
-def read_all():
-    return
-
+@router.get("/feed_history/", response_model=Dict[str, Any]) # This will now be GET /api/v1/feed_history/
+async def read_feed_history(
+    page: int = Query(1, ge=1),
+    limit: int = Query(10, ge=1, le=100)
+):
+    try:
+        history_data = await get_feed_history(page=page, limit=limit)
+        return history_data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

@@ -4,12 +4,13 @@ from datetime import datetime
 
 
 class FeedRequest(BaseModel):
-    source: Literal["manual", "api"] = Field(default="api", description="How the feed was triggered")
-    requested_by: str = Field(..., examples=["user@example.com"])
+    mode: Literal["manual", "api"] = Field(default="api", description="How the feed was triggered")
+    requested_by: str = Field(default="manual", examples=["user@example.com"])
 
 
 class FeedResponse(BaseModel):
     feed_id: str
     requested_by: str
+    mode: str
     status: Literal["queued", "sent", "failed"]
     timestamp: datetime

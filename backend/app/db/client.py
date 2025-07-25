@@ -1,5 +1,5 @@
 import boto3
-from backend.app.core.config import settings
+from app.core.config import settings
 
 
 def get_dynamodb_resource():
@@ -13,3 +13,6 @@ def get_feed_history_table():
 def get_feed_schedule_table():
     return get_dynamodb_resource().Table(settings.DYNAMO_FEED_SCHEDULE_TABLE)
 
+
+def get_device_status_table():
+    return get_dynamodb_resource().Table(settings.DEVICE_STATUS_TABLE_NAME)

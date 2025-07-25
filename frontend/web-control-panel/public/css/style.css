@@ -15,42 +15,82 @@ body {
 }
 
 /* Container styling */
-.container {
+.main-container {
     background-color: #ffffff;
     padding: 2rem;
     border-radius: 0.75rem; /* rounded-xl */
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    max-width: 400px; /* Adjusted max-width for simpler layout */
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    max-width: 600px; /* Increased max-width for better table display */
     width: 100%;
     text-align: center;
 }
 
-/* Primary button styling */
-.button-primary {
-    background-color: #4f46e5; /* Indigo 600 */
-    color: white;
-    padding: 0.75rem 1.5rem; /* py-3 px-6 */
-    border-radius: 0.5rem; /* rounded-lg */
+.card {
+    box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+}
+
+/* History Table Styling */
+#historyTable {
+    width: 100%; /* Ensure table takes full width */
+    border-collapse: collapse; /* Remove space between cells */
+    /* Ensure table has a minimum width to trigger horizontal scroll if content is wide */
+    min-width: 500px; /* Adjust this value if content still cuts off on small screens */
+}
+
+#historyTable th, #historyTable td {
+    padding: 0.75rem 1rem; /* py-3 px-4 */
+    text-align: left;
+    vertical-align: middle;
+    white-space: nowrap; /* Prevent text from wrapping within cells */
+}
+
+#historyTable thead th {
+    background-color: #f9fafb; /* bg-gray-50 */
+    color: #4b5563; /* text-gray-600 */
     font-weight: 600; /* font-semibold */
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06); /* shadow-md */
-    transition: all 0.2s ease-in-out;
-    cursor: pointer;
-    width: 100%;
-    font-size: 1.125rem; /* text-lg */
-    border: none; /* Remove default button border */
+    font-size: 0.75rem; /* text-xs */
+    text-transform: uppercase;
+    letter-spacing: 0.05em; /* tracking-wider */
+    border-bottom: 1px solid #e5e7eb; /* border-b border-gray-200 */
 }
 
-.button-primary:hover {
-    background-color: #4338ca; /* Indigo 700 */
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
+#historyTable tbody tr {
+    transition: background-color 0.15s ease-in-out;
 }
 
-.button-primary:active {
-    background-color: #3730a3; /* Indigo 800 */
-    box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06); /* shadow-inner */
+#historyTable tbody tr:nth-child(even) {
+    background-color: #f9fafb; /* bg-gray-50 for zebra striping */
 }
 
-.button-primary:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+#historyTable tbody tr:hover {
+    background-color: #f3f4f6; /* bg-gray-100 on hover */
+}
+
+/* Status text styling within table cells */
+#historyTable .status-queued {
+    @apply text-yellow-600 font-medium;
+}
+
+#historyTable .status-sent {
+    @apply text-blue-600 font-medium;
+}
+
+#historyTable .status-completed {
+    @apply text-green-600 font-medium;
+}
+
+#historyTable .status-failed {
+    @apply text-red-600 font-medium;
+}
+
+/* Responsive Table for Small Screens:
+   Removed the 'display: block' and associated pseudo-element styling
+   to allow the table to scroll horizontally.
+   The 'overflow-x-auto' on the parent div in HTML will now handle responsiveness.
+*/
+@media (max-width: 640px) {
+    .main-container {
+        padding: 1rem; /* Reduce padding on very small screens */
+    }
+    /* No specific table display changes here; rely on overflow-x-auto */
 }

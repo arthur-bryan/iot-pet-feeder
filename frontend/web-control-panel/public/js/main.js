@@ -7,22 +7,59 @@ const API_BASE_URL = "https://e90m1jcfzj.execute-api.us-east-2.amazonaws.com/prd
 
 const feedButton = document.getElementById('feedButton');
 const feedMessage = document.getElementById('feedMessage');
+const eventsContainer = document.getElementById('eventsContainer'); // Now refers to tbody
+const loadingEvents = document.getElementById('loadingEvents'); // Now refers to a td within a tr
+const prevPageButton = document.getElementById('prevPageButton');
+const nextPageButton = document.getElementById('nextPageButton');
+const pageInfo = document.getElementById('pageInfo');
+// Removed deviceStatusElement and statusMessageElement as they are no longer used.
+
+const ITEMS_PER_PAGE = 10;
+let currentPage = 1;
+let totalPages = 1;
+
+// --- Helper Functions ---
+
+function formatTimestamp(isoString) {
+    try {
+        const date = new Date(isoString);
+        const options = {
+            year: 'numeric', month: 'short', day: 'numeric',
+            hour: '2-digit', minute: '2-digit', second: '2-digit',
+            hour12: false
+        };
+        return date.toLocaleString(undefined, options);
+    } catch (e) {
+        console.error("Error formatting timestamp:", isoString, e);
+        return isoString;
+    }
+}
+
+function getStatusClass(status) {
+    switch (status.toLowerCase()) {
+        case 'queued': return 'status-queued';
+        case 'sent': return 'status-sent';
+        case 'completed': return 'status-completed';
+        case 'failed': return 'status-failed';
+        default: return '';
+    }
+}
+
+// --- API Calls ---
 
 // Function to send feed command
 async function sendFeedCommand() {
-    feedButton.disabled = true; // Disable button to prevent multiple clicks
+    feedButton.disabled = true;
     feedMessage.textContent = "Sending feed command...";
     feedMessage.className = "text-sm text-gray-600 mt-3"; // Reset class
 
     try {
-        // Corrected URL: API_BASE_URL + router prefix + endpoint path
         const response = await fetch(`${API_BASE_URL}/api/v1/feed/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            // For now, hardcode 'requested_by'. In a real app, this comes from login.
-            body: JSON.stringify({ "requested_by": "web_user@example.com" })
+            body: JSON.stringify({ "requested_by": "web_user@example.com", "mode": "api" })
         });
 
         if (!response.ok) {
@@ -31,20 +68,96 @@ async function sendFeedCommand() {
         }
 
         const data = await response.json();
-        feedMessage.textContent = data.message;
-        feedMessage.className = "text-sm text-green-600 mt-3 font-semibold"; // Success message styling
+        feedMessage.textContent = `Command sent! Status: ${data.status.toUpperCase()}`;
+        feedMessage.className = "text-sm text-green-600 mt-3 font-semibold";
+
+        // Refresh history after sending command
+        setTimeout(() => {
+            fetchFeedHistory(1); // Go back to first page after a new feed
+        }, 1500);
 
     } catch (error) {
         console.error("Error sending feed command:", error);
         feedMessage.textContent = `Failed to send command: ${error.message}`;
-        feedMessage.className = "text-sm text-red-600 mt-3 font-semibold"; // Error message styling
+        feedMessage.className = "text-sm text-red-600 mt-3 font-semibold";
     } finally {
-        feedButton.disabled = false; // Re-enable button
+        feedButton.disabled = false; // Re-enable button directly here
     }
 }
 
+// Function to fetch and display feeding history
+async function fetchFeedHistory(page = 1) {
+    // Clear previous events and show loading message
+    eventsContainer.innerHTML = `<tr><td colspan="4" class="px-4 py-4 text-center text-gray-500" id="loadingEvents">Loading feeding history...</td></tr>`; // colspan changed to 4
+    pageInfo.textContent = `Loading...`;
+    prevPageButton.disabled = true;
+    nextPageButton.disabled = true;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/v1/feed_history/?page=${page}&limit=${ITEMS_PER_PAGE}`);
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("HTTP error fetching history:", response.status, errorText);
+            throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+        }
+        const data = await response.json();
+
+        eventsContainer.innerHTML = ''; // Clear loading message
+
+        if (data.items && data.items.length > 0) {
+            data.items.forEach(event => {
+                const row = document.createElement('tr');
+                row.className = 'history-item'; // Apply styling from CSS
+
+                // Using data-label for responsive table headers
+                row.innerHTML = `
+                    <td data-label="Timestamp">${formatTimestamp(event.timestamp)}</td>
+                    <td data-label="Trigger">${event.requested_by || 'N/A'}</td>
+                    <td data-label="Mode">${event.mode || 'N/A'}</td>
+                    <td data-label="Status" class="${getStatusClass(event.status)}">${event.status.toUpperCase() || 'N/A'}</td>
+                `;
+                eventsContainer.appendChild(row);
+            });
+
+            totalPages = data.total_pages;
+            currentPage = data.page;
+            pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+
+            prevPageButton.disabled = currentPage === 1;
+            nextPageButton.disabled = currentPage === totalPages || totalPages === 0;
+        } else {
+            eventsContainer.innerHTML = `<tr><td colspan="4" class="px-4 py-4 text-center text-gray-500">No feeding events found.</td></tr>`;
+            pageInfo.textContent = `Page 0 of 0`;
+        }
+
+    } catch (error) {
+        console.error("Error fetching feed history:", error);
+        eventsContainer.innerHTML = `<tr><td colspan="4" class="px-4 py-4 text-center text-red-600">Error loading history: ${error.message}</td></tr>`;
+        pageInfo.textContent = `Error`;
+    }
+}
+
+// Removed updateDeviceStatus function entirely.
+
 // --- Event Listeners & Initial Load ---
+
 feedButton.addEventListener('click', sendFeedCommand);
 
-// Initial message clear
-feedMessage.textContent = "";
+prevPageButton.addEventListener('click', () => {
+    if (currentPage > 1) {
+        fetchFeedHistory(currentPage - 1);
+    }
+});
+
+nextPageButton.addEventListener('click', () => {
+    if (currentPage < totalPages) {
+        fetchFeedHistory(currentPage + 1);
+    }
+});
+
+// Initial load of feed history
+fetchFeedHistory(1);
+
+// Periodically refresh history (e.g., every 30 seconds)
+setInterval(() => fetchFeedHistory(currentPage), 30000);
+// Removed periodic call to updateDeviceStatus.

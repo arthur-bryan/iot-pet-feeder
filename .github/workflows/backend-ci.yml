@@ -4,7 +4,7 @@ name: Backend CI/CD
 on:
   push:
     branches:
-      - main # Trigger on push to the main branch
+      - dev 
     paths:
       - 'backend/**' # Only trigger if backend files change
       - 'infra/terraform/environments/dev/**' # Or if dev environment Terraform changes
@@ -12,8 +12,8 @@ on:
   workflow_dispatch: # Allows manual triggering from GitHub UI
 
 env:
-  AWS_REGION: sa-east-1 # Your AWS region, ensure this matches your Terraform variables
-  PROJECT_NAME: pet-feeder # Your project name, ensure this matches your Terraform variables
+  AWS_REGION: us-east-2 
+  PROJECT_NAME: iot-pet-feeder 
   # Terraform Backend Configuration (must match setup_tf_backend.sh)
   TF_STATE_BUCKET_NAME: ${{ secrets.TF_STATE_BUCKET_NAME }}
   TF_LOCK_TABLE_NAME: ${{ secrets.TF_LOCK_TABLE_NAME }}
@@ -36,7 +36,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.9' # Use the same Python version as your Lambda runtime
+          python-version: '3.12' # Use the same Python version as your Lambda runtime
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -52,7 +52,7 @@ jobs:
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.x.x # Use a compatible Terraform version, e.g., 1.5.7
+          terraform_version: 1.12.2
 
       - name: Create Build Directory
         run: mkdir -p ${{ env.BUILD_DIR }}

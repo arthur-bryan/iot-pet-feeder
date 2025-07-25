@@ -1,0 +1,127 @@
+# .github/workflows/backend-ci.yml
+name: Backend CI/CD
+
+on:
+  push:
+    branches:
+      - main # Trigger on push to the main branch
+    paths:
+      - 'backend/**' # Only trigger if backend files change
+      - 'infra/terraform/environments/dev/**' # Or if dev environment Terraform changes
+      - 'infra/terraform/modules/**' # Or if any Terraform modules change
+  workflow_dispatch: # Allows manual triggering from GitHub UI
+
+env:
+  AWS_REGION: sa-east-1 # Your AWS region, ensure this matches your Terraform variables
+  PROJECT_NAME: pet-feeder # Your project name, ensure this matches your Terraform variables
+  # Terraform Backend Configuration (must match setup_tf_backend.sh)
+  TF_STATE_BUCKET_NAME: ${{ secrets.TF_STATE_BUCKET_NAME }}
+  TF_LOCK_TABLE_NAME: ${{ secrets.TF_LOCK_TABLE_NAME }}
+  # Lambda-specific build paths and names
+  BACKEND_SOURCE_DIR: backend # Path to your backend application code
+  BUILD_DIR: build # Directory to store generated Lambda ZIPs (relative to workflow root)
+  API_LAMBDA_ZIP_NAME: api-lambda-deployment-package.zip
+  STATUS_LAMBDA_ZIP_NAME: status-lambda-deployment-package.zip
+  # Environment to deploy (e.g., dev, prod) - must match infra/terraform/environments/
+  TF_ENVIRONMENT: dev # Deploy to 'dev' environment by default
+
+jobs:
+  build-and-deploy-backend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9' # Use the same Python version as your Lambda runtime
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Install AWS CLI (if not pre-installed)
+        run: |
+          sudo apt-get update && sudo apt-get install -y awscli
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.x.x # Use a compatible Terraform version, e.g., 1.5.7
+
+      - name: Create Build Directory
+        run: mkdir -p ${{ env.BUILD_DIR }}
+
+      - name: Build FastAPI Lambda Package
+        run: |
+          echo "Building FastAPI Lambda package: ${{ env.API_LAMBDA_ZIP_NAME }}"
+          API_TEMP_DIR=$(mktemp -d)
+          cp -R "${{ env.BACKEND_SOURCE_DIR }}/." "${API_TEMP_DIR}/"
+          
+          if [ -f "${API_TEMP_DIR}/requirements.txt" ]; then
+              echo "Installing Python dependencies for FastAPI Lambda..."
+              python3 -m pip install -r "${API_TEMP_DIR}/requirements.txt" -t "${API_TEMP_DIR}"
+          else
+              echo "Warning: requirements.txt not found for FastAPI Lambda. Skipping pip install."
+          fi
+          
+          (cd "${API_TEMP_DIR}" && zip -r "${{ github.workspace }}/${{ env.BUILD_DIR }}/${{ env.API_LAMBDA_ZIP_NAME }}" .)
+          rm -rf "${API_TEMP_DIR}"
+          echo "FastAPI Lambda package created: ${{ env.BUILD_DIR }}/${{ env.API_LAMBDA_ZIP_NAME }}"
+
+      - name: Build IoT Status Updater Lambda Package
+        run: |
+          echo "Building IoT Status Updater Lambda package: ${{ env.STATUS_LAMBDA_ZIP_NAME }}"
+          STATUS_TEMP_DIR=$(mktemp -d)
+          cp "${{ env.BACKEND_SOURCE_DIR }}/status_updater.py" "${STATUS_TEMP_DIR}/"
+          # If status_updater.py has its own requirements.txt (different from FastAPI's)
+          # if [ -f "${{ env.BACKEND_SOURCE_DIR }}/status_updater_requirements.txt" ]; then
+          #     cp "${{ env.BACKEND_SOURCE_DIR }}/status_updater_requirements.txt" "${STATUS_TEMP_DIR}/requirements.txt"
+          #     echo "Installing Python dependencies for Status Updater Lambda..."
+          #     python3 -m pip install -r "${STATUS_TEMP_DIR}/requirements.txt" -t "${STATUS_TEMP_DIR}"
+          # fi
+          
+          (cd "${STATUS_TEMP_DIR}" && zip -r "${{ github.workspace }}/${{ env.BUILD_DIR }}/${{ env.STATUS_LAMBDA_ZIP_NAME }}" .)
+          rm -rf "${STATUS_TEMP_DIR}"
+          echo "IoT Status Updater Lambda package created: ${{ env.BUILD_DIR }}/${{ env.STATUS_LAMBDA_ZIP_NAME }}"
+
+      - name: Terraform Init
+        id: init
+        run: |
+          cd infra/terraform/environments/${{ env.TF_ENVIRONMENT }}
+          # Use -reconfigure to ensure backend config is updated if changed
+          terraform init \
+            -backend-config="bucket=${{ env.TF_STATE_BUCKET_NAME }}" \
+            -backend-config="key=${{ env.PROJECT_NAME }}/${{ env.TF_ENVIRONMENT }}/terraform.tfstate" \
+            -backend-config="region=${{ env.AWS_REGION }}" \
+            -backend-config="dynamodb_table=${{ env.TF_LOCK_TABLE_NAME }}" \
+            -backend-config="encrypt=true"
+
+      - name: Terraform Validate
+        id: validate
+        run: |
+          cd infra/terraform/environments/${{ env.TF_ENVIRONMENT }}
+          terraform validate
+
+      - name: Terraform Plan
+        id: plan
+        run: |
+          cd infra/terraform/environments/${{ env.TF_ENVIRONMENT }}
+          terraform plan -no-color \
+            -var="build_dir=${{ env.BUILD_DIR }}" \
+            -var="api_lambda_zip_name=${{ env.API_LAMBDA_ZIP_NAME }}" \
+            -var="status_lambda_zip_name=${{ env.STATUS_LAMBDA_ZIP_NAME }}" \
+            -out=tfplan
+        # No need to pass iot_endpoint as a var; it's fetched by a data source in main.tf
+
+      - name: Terraform Apply
+        id: apply
+        run: |
+          cd infra/terraform/environments/${{ env.TF_ENVIRONMENT }}
+          terraform apply -auto-approve tfplan
+        # No need to pass iot_endpoint as a var; it's fetched by a data source in main.tf

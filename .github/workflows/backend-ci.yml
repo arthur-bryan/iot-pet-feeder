@@ -2,9 +2,11 @@
 name: Backend CI/CD
 
 on:
+  pull_request:
   push:
     branches:
-      - dev # Changed from 'main' as per your setup
+      - dev
+      - master
     paths:
       - 'backend/**' # Only trigger if backend files change
       - 'infra/terraform/environments/dev/**' # Or if dev environment Terraform changes

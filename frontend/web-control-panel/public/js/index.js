@@ -15,10 +15,18 @@ const deviceStatusElement = document.getElementById('deviceStatus');
 const statusMessageElement = document.getElementById('statusMessage');
 const refreshButton = document.getElementById('refreshButton');
 
+// --- Modal Elements ---
+const busyModal = document.getElementById('busyModal');
+const modalTitle = document.getElementById('modalTitle');
+const modalMessage = document.getElementById('modalMessage');
+const closeModalButton = document.getElementById('closeModalButton');
+
 const ITEMS_PER_PAGE = 10;
 let currentPage = 1;
 let totalPages = 1;
 let currentUserName = "Guest"; // Default user name, will be overwritten by session storage
+
+let statusPollingInterval = null; // Variable to hold the interval ID for polling
 
 // --- Helper Functions ---
 
@@ -47,10 +55,35 @@ function getStatusClass(status) {
     }
 }
 
+/**
+ * Shows a custom modal with a given title and message.
+ * @param {string} title The title of the modal.
+ * @param {string} message The message content of the modal.
+ */
+function showModal(title, message) {
+    modalTitle.textContent = title;
+    modalMessage.textContent = message;
+    busyModal.classList.remove('hidden'); // Show the modal
+}
+
+/**
+ * Hides the custom modal.
+ */
+function hideModal() {
+    busyModal.classList.add('hidden'); // Hide the modal
+}
+
 // --- API Calls ---
 
 // Function to send feed command
 async function sendFeedCommand() {
+    // Check if feeder is busy before sending command
+    const currentFeederStatus = deviceStatusElement.textContent.toUpperCase();
+    if (currentFeederStatus === 'OPENING' || currentFeederStatus === 'OPEN' || currentFeederStatus === 'CLOSING') {
+        showModal('Feeder Busy', 'The feeder is currently busy. Please wait a moment before sending another command.');
+        return; // Exit the function if busy
+    }
+
     feedButton.disabled = true;
     feedMessage.textContent = "Sending feed command...";
     feedMessage.className = "text-sm text-gray-600 mt-3"; // Reset class
@@ -76,7 +109,29 @@ async function sendFeedCommand() {
 
         // Refresh history and device status immediately after sending command
         fetchFeedHistory(1); // Go back to first page after a new feed
-        updateDeviceStatus(); // Also update device status
+        updateDeviceStatus(); // Also update device status immediately
+
+        // Start polling for status updates for 5 seconds
+        let pollCount = 0;
+        const maxPolls = 5; // Poll for 5 seconds
+        const pollIntervalMs = 1000; // Every 1 second
+
+        // Clear any existing polling interval to prevent multiple intervals running
+        if (statusPollingInterval) {
+            clearInterval(statusPollingInterval);
+        }
+
+        statusPollingInterval = setInterval(() => {
+            if (pollCount < maxPolls) {
+                console.log(`Polling status... (${pollCount + 1}/${maxPolls})`);
+                updateDeviceStatus();
+                pollCount++;
+            } else {
+                clearInterval(statusPollingInterval);
+                statusPollingInterval = null; // Reset the interval ID
+                console.log("Status polling finished.");
+            }
+        }, pollIntervalMs);
 
     } catch (error) {
         console.error("Error sending feed command:", error);
@@ -177,6 +232,8 @@ refreshButton.addEventListener('click', () => {
     updateDeviceStatus();
 });
 
+// Event listener for closing the modal
+closeModalButton.addEventListener('click', hideModal);
 
 // Initial load logic for index.html
 document.addEventListener('DOMContentLoaded', () => {

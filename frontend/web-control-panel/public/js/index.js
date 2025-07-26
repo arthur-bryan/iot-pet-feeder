@@ -1,23 +1,24 @@
-// public/js/main.js
+// public/js/index.js
 
 // IMPORTANT: This placeholder will be replaced by the Amplify build process
 // with the actual API Gateway URL from your deployment environment.
-// DO NOT hardcode your API Gateway URL here directly in your repository.
-const API_BASE_URL = "REPLACE_API_BASE_URL"; // <<< CORRECTED TO PLACEHOLDER
+const API_BASE_URL = "REPLACE_API_BASE_URL";
 
+// --- Main App Elements ---
 const feedButton = document.getElementById('feedButton');
 const feedMessage = document.getElementById('feedMessage');
-const eventsContainer = document.getElementById('eventsContainer'); // Now refers to tbody
-const loadingEvents = document.getElementById('loadingEvents'); // Now refers to a td within a tr
+const eventsContainer = document.getElementById('eventsContainer');
 const prevPageButton = document.getElementById('prevPageButton');
 const nextPageButton = document.getElementById('nextPageButton');
 const pageInfo = document.getElementById('pageInfo');
 const deviceStatusElement = document.getElementById('deviceStatus');
-const statusMessageElement = document.getElementById('statusMessage'); // Assumes this ID exists in HTML
+const statusMessageElement = document.getElementById('statusMessage');
+const refreshButton = document.getElementById('refreshButton');
 
 const ITEMS_PER_PAGE = 10;
 let currentPage = 1;
 let totalPages = 1;
+let currentUserName = "Guest"; // Default user name, will be overwritten by session storage
 
 // --- Helper Functions ---
 
@@ -60,7 +61,8 @@ async function sendFeedCommand() {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ "requested_by": "web_user@example.com", "mode": "manual" })
+            // Use the currentUserName for requested_by
+            body: JSON.stringify({ "requested_by": currentUserName, "mode": "manual" })
         });
 
         if (!response.ok) {
@@ -72,10 +74,9 @@ async function sendFeedCommand() {
         feedMessage.textContent = `Command sent! Status: ${data.status.toUpperCase()}`;
         feedMessage.className = "text-sm text-green-600 mt-3 font-semibold";
 
-        // Refresh history after sending command
-        setTimeout(() => {
-            fetchFeedHistory(1); // Go back to first page after a new feed
-        }, 1500);
+        // Refresh history and device status immediately after sending command
+        fetchFeedHistory(1); // Go back to first page after a new feed
+        updateDeviceStatus(); // Also update device status
 
     } catch (error) {
         console.error("Error sending feed command:", error);
@@ -89,7 +90,7 @@ async function sendFeedCommand() {
 // Function to fetch and display feeding history
 async function fetchFeedHistory(page = 1) {
     // Clear previous events and show loading message
-    eventsContainer.innerHTML = `<tr><td colspan="4" class="px-4 py-4 text-center text-gray-500" id="loadingEvents">Loading feeding history...</td></tr>`; // colspan changed to 4
+    eventsContainer.innerHTML = `<tr><td colspan="4" class="px-4 py-4 text-center text-gray-500" id="loadingEvents">Loading feeding history...</td></tr>`;
     pageInfo.textContent = `Loading...`;
     prevPageButton.disabled = true;
     nextPageButton.disabled = true;
@@ -108,9 +109,8 @@ async function fetchFeedHistory(page = 1) {
         if (data.items && data.items.length > 0) {
             data.items.forEach(event => {
                 const row = document.createElement('tr');
-                row.className = 'history-item'; // Apply styling from CSS
+                row.className = 'history-item';
 
-                // Using data-label for responsive table headers
                 row.innerHTML = `
                     <td data-label="Timestamp">${formatTimestamp(event.timestamp)}</td>
                     <td data-label="Trigger">${event.requested_by || 'N/A'}</td>
@@ -141,13 +141,12 @@ async function fetchFeedHistory(page = 1) {
 // Function to update device status
 async function updateDeviceStatus() {
     try {
-        const response = await fetch(`${API_BASE_URL}/status/`); // Assuming /status/ is at root
+        const response = await fetch(`${API_BASE_URL}/status/`);
         if (!response.ok) {
             const errorText = await response.text();
             throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
         }
         const data = await response.json();
-        // <<< CORRECTED THIS: Access data.feeder_state instead of data.status
         deviceStatusElement.textContent = data.feeder_state.toUpperCase();
         statusMessageElement.textContent = `Last updated: ${formatTimestamp(data.last_updated)}`;
     } catch (error) {
@@ -173,10 +172,22 @@ nextPageButton.addEventListener('click', () => {
     }
 });
 
-// Initial load of feed history and device status
-fetchFeedHistory(1);
-updateDeviceStatus();
+refreshButton.addEventListener('click', () => {
+    fetchFeedHistory(1);
+    updateDeviceStatus();
+});
 
-// Periodically refresh history (e.g., every 30 seconds) and device status (e.g., every 5 seconds)
-setInterval(() => fetchFeedHistory(currentPage), 30000);
-setInterval(updateDeviceStatus, 5000); // Update status every 5 seconds
+
+// Initial load logic for index.html
+document.addEventListener('DOMContentLoaded', () => {
+    const storedGuestName = sessionStorage.getItem('guestUserName');
+    if (!storedGuestName) {
+        // If no guest name is found, redirect to login page
+        window.location.href = 'login.html';
+    } else {
+        // If guest name is found, set it and load app content
+        currentUserName = storedGuestName;
+        fetchFeedHistory(1);
+        updateDeviceStatus();
+    }
+});

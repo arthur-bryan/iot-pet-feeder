@@ -2,7 +2,8 @@
 
 // IMPORTANT: This placeholder will be replaced by the Amplify build process
 // with the actual API Gateway URL from your deployment environment.
-const API_BASE_URL = "REPLACE_API_BASE_URL"; // <<< CHANGED TO PLACEHOLDER
+// DO NOT hardcode your API Gateway URL here directly in your repository.
+const API_BASE_URL = "REPLACE_API_BASE_URL"; // <<< CORRECTED TO PLACEHOLDER
 
 const feedButton = document.getElementById('feedButton');
 const feedMessage = document.getElementById('feedMessage');
@@ -11,8 +12,8 @@ const loadingEvents = document.getElementById('loadingEvents'); // Now refers to
 const prevPageButton = document.getElementById('prevPageButton');
 const nextPageButton = document.getElementById('nextPageButton');
 const pageInfo = document.getElementById('pageInfo');
-const deviceStatusElement = document.getElementById('deviceStatus'); // Added back for status display
-const statusMessageElement = document.getElementById('statusMessage'); // Added back for status message
+const deviceStatusElement = document.getElementById('deviceStatus');
+const statusMessageElement = document.getElementById('statusMessage'); // Assumes this ID exists in HTML
 
 const ITEMS_PER_PAGE = 10;
 let currentPage = 1;
@@ -146,7 +147,8 @@ async function updateDeviceStatus() {
             throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
         }
         const data = await response.json();
-        deviceStatusElement.textContent = data.status.toUpperCase();
+        // <<< CORRECTED THIS: Access data.feeder_state instead of data.status
+        deviceStatusElement.textContent = data.feeder_state.toUpperCase();
         statusMessageElement.textContent = `Last updated: ${formatTimestamp(data.last_updated)}`;
     } catch (error) {
         console.error("Error fetching device status:", error);

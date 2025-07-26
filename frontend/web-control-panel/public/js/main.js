@@ -1,9 +1,8 @@
 // public/js/main.js
 
-// IMPORTANT: Replace with the actual URL of your deployed FastAPI backend
-// This should be the base URL of your API Gateway stage.
-// e.g., "https://e90m1jcfzj.execute-api.us-east-2.amazonaws.com/prd"
-const API_BASE_URL = "https://e90m1jcfzj.execute-api.us-east-2.amazonaws.com/prd";
+// IMPORTANT: This placeholder will be replaced by the Amplify build process
+// with the actual API Gateway URL from your deployment environment.
+const API_BASE_URL = "REPLACE_API_BASE_URL"; // <<< CHANGED TO PLACEHOLDER
 
 const feedButton = document.getElementById('feedButton');
 const feedMessage = document.getElementById('feedMessage');
@@ -12,7 +11,8 @@ const loadingEvents = document.getElementById('loadingEvents'); // Now refers to
 const prevPageButton = document.getElementById('prevPageButton');
 const nextPageButton = document.getElementById('nextPageButton');
 const pageInfo = document.getElementById('pageInfo');
-// Removed deviceStatusElement and statusMessageElement as they are no longer used.
+const deviceStatusElement = document.getElementById('deviceStatus'); // Added back for status display
+const statusMessageElement = document.getElementById('statusMessage'); // Added back for status message
 
 const ITEMS_PER_PAGE = 10;
 let currentPage = 1;
@@ -59,7 +59,7 @@ async function sendFeedCommand() {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ "requested_by": "web_user@example.com", "mode": "api" })
+            body: JSON.stringify({ "requested_by": "web_user@example.com", "mode": "manual" })
         });
 
         if (!response.ok) {
@@ -137,7 +137,23 @@ async function fetchFeedHistory(page = 1) {
     }
 }
 
-// Removed updateDeviceStatus function entirely.
+// Function to update device status
+async function updateDeviceStatus() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/status`); // Assuming /status is at root
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+        }
+        const data = await response.json();
+        deviceStatusElement.textContent = data.status.toUpperCase();
+        statusMessageElement.textContent = `Last updated: ${formatTimestamp(data.last_updated)}`;
+    } catch (error) {
+        console.error("Error fetching device status:", error);
+        deviceStatusElement.textContent = "Error";
+        statusMessageElement.textContent = `Could not fetch device status: ${error.message}`;
+    }
+}
 
 // --- Event Listeners & Initial Load ---
 
@@ -155,9 +171,10 @@ nextPageButton.addEventListener('click', () => {
     }
 });
 
-// Initial load of feed history
+// Initial load of feed history and device status
 fetchFeedHistory(1);
+updateDeviceStatus();
 
-// Periodically refresh history (e.g., every 30 seconds)
+// Periodically refresh history (e.g., every 30 seconds) and device status (e.g., every 5 seconds)
 setInterval(() => fetchFeedHistory(currentPage), 30000);
-// Removed periodic call to updateDeviceStatus.
+setInterval(updateDeviceStatus, 5000); // Update status every 5 seconds

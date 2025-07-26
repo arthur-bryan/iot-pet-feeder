@@ -140,7 +140,7 @@ async function fetchFeedHistory(page = 1) {
 // Function to update device status
 async function updateDeviceStatus() {
     try {
-        const response = await fetch(`${API_BASE_URL}/status`); // Assuming /status is at root
+        const response = await fetch(`${API_BASE_URL}/status/`); // Assuming /status/ is at root
         if (!response.ok) {
             const errorText = await response.text();
             throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);

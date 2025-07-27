@@ -212,6 +212,12 @@ async function updateDeviceStatus() {
 
 async function handleLogout() {
     try {
+        // Ensure Amplify is defined before calling its methods
+        if (typeof Amplify === 'undefined' || !Amplify.Auth) {
+            console.error("Amplify or Amplify.Auth is not defined when handleLogout is called.");
+            showModal('Logout Error', 'Amplify library not fully loaded. Please try again.');
+            return;
+        }
         await Amplify.Auth.signOut();
         sessionStorage.removeItem('authenticatedUserEmail');
         sessionStorage.removeItem('guestUserName');
@@ -243,6 +249,34 @@ closeModalButton.addEventListener('click', hideModal);
 
 // Initial load logic for index.html
 document.addEventListener('DOMContentLoaded', async () => {
+    // Define amplifyConfig here, within DOMContentLoaded, to ensure window.ENV is available
+    const amplifyConfig = {
+        Auth: {
+            Cognito: {
+                userPoolId: window.ENV?.VITE_USER_POOL_ID,
+                userPoolClientId: window.ENV?.VITE_USER_POOL_CLIENT_ID,
+                region: window.ENV?.VITE_REGION,
+                identityProviders: {
+                    google: {
+                        clientId: window.ENV?.VITE_GOOGLE_CLIENT_ID,
+                        scopes: ['email', 'profile', 'openid']
+                    }
+                },
+                loginWith: {
+                    oauth: {
+                        domain: `${window.ENV?.VITE_USER_POOL_DOMAIN}.auth.${window.ENV?.VITE_REGION}.amazoncognito.com`,
+                        redirectSignIn: `${window.location.origin}/`,
+                        redirectSignOut: `${window.location.origin}/`,
+                        responseType: 'code'
+                    }
+                }
+            }
+        }
+    };
+    // Configure Amplify here, after the library is loaded and DOM is ready
+    Amplify.configure(amplifyConfig);
+    console.log("Amplify configured from index.js DOMContentLoaded.");
+
     logoutButton.addEventListener('click', handleLogout); // Attach logout listener here
 
     let userLoggedIn = false;

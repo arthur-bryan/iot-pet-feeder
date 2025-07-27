@@ -1,4 +1,4 @@
-// public/js/index.js
+import { Amplify } from 'aws-amplify'; // ADDED: Explicit import for Amplify
 
 // IMPORTANT: This placeholder will be replaced by the Amplify build process
 // with the actual API Gateway URL from your deployment environment.
@@ -58,7 +58,8 @@ const amplifyConfig = {
     }
 };
 
-Amplify.configure(amplifyConfig);
+// Moved Amplify.configure inside DOMContentLoaded
+// Amplify.configure(amplifyConfig);
 
 // --- Helper Functions ---
 
@@ -285,6 +286,9 @@ closeModalButton.addEventListener('click', hideModal);
 
 // Initial load logic for index.html
 document.addEventListener('DOMContentLoaded', async () => {
+    // Configure Amplify when the DOM is ready
+    Amplify.configure(amplifyConfig); // MOVED: Configure Amplify here
+
     let userLoggedIn = false;
 
     // 1. Try to get current Amplify authenticated user

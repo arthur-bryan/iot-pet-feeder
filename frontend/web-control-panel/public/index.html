@@ -94,7 +94,8 @@
     </div>
 
     <!-- Link to main application JavaScript file -->
+    <!-- Load Amplify library BEFORE your custom script -->
     <script src="https://cdn.jsdelivr.net/npm/aws-amplify@6.0.20/dist/aws-amplify.min.js"></script>
-    <script src="js/index.js"></script>
+    <script src="js/index.js" type="module"></script> <!-- ADDED type="module" -->
 </body>
 </html>

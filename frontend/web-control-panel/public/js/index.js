@@ -57,6 +57,9 @@ const amplifyConfig = {
     }
 };
 
+// Configure Amplify immediately when the script loads
+Amplify.configure(amplifyConfig); // MOVED: Configure Amplify here to ensure it's available
+
 // --- Helper Functions ---
 
 function formatTimestamp(isoString) {
@@ -240,6 +243,7 @@ async function updateDeviceStatus() {
 
 async function handleLogout() {
     try {
+        // Amplify is now configured at the top-level, so it should be defined here
         await Amplify.Auth.signOut();
         sessionStorage.removeItem('authenticatedUserEmail');
         sessionStorage.removeItem('guestUserName');
@@ -277,9 +281,6 @@ closeModalButton.addEventListener('click', hideModal);
 
 // Initial load logic for index.html
 document.addEventListener('DOMContentLoaded', async () => {
-    // Configure Amplify when the DOM is ready
-    Amplify.configure(amplifyConfig);
-
     let userLoggedIn = false;
 
     // 1. Try to get current Amplify authenticated user

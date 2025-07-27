@@ -1,3 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Pet Feeder Control</title>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Link to external custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="font-inter antialiased bg-gradient-to-br from-blue-100 to-indigo-200 min-h-screen flex items-center justify-center p-4 sm:p-6">
+
+    <!-- Main Application Content -->
+    <div id="appContent" class="main-container bg-white rounded-2xl shadow-xl p-6 sm:p-8 w-full max-w-2xl text-center">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-4xl sm:text-5xl font-extrabold text-gray-900 leading-tight">Smart Pet Feeder</h1>
+            <div class="text-right">
+                <p id="userNameDisplay" class="text-lg font-medium text-gray-700">Welcome, Guest!</p>
+                <button id="logoutButton" class="text-sm text-indigo-600 hover:text-indigo-800 transition-colors duration-200">Logout</button>
+            </div>
+        </div>
+        <p class="text-lg text-gray-600 mb-8">Manage your pet's meals with ease, from anywhere.</p>
+
+        <!-- Device Status Section -->
+        <div class="card bg-gray-50 p-6 rounded-xl shadow-inner mb-8">
+            <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">Device Status</h2>
+            <p id="deviceStatus" class="text-xl font-semibold text-gray-700 mb-2">Loading...</p>
+            <p id="statusMessage" class="text-sm text-gray-500"></p>
+        </div>
+
+        <!-- Container for side-by-side buttons -->
+        <div class="flex flex-col md:flex-row gap-4 mb-8">
+            <!-- Manual Feed Section -->
+            <div class="card bg-gradient-to-r from-indigo-50 to-blue-50 p-6 rounded-xl shadow-inner flex-1">
+                <h2 class="text-2xl sm:text-3xl font-bold text-indigo-800 mb-4">Manual Feed</h2>
+                <p class="text-gray-700 mb-6">Dispense food instantly with a single tap.</p>
+                <button id="feedButton" class="w-full text-lg py-3 px-6 bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-bold rounded-xl shadow-lg transition-all duration-300 ease-in-out hover:from-indigo-700 hover:to-blue-700 hover:shadow-xl hover:-translate-y-0.5 active:from-indigo-800 active:to-blue-800 active:shadow-inner active:translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-500 disabled:shadow-none disabled:transform-none">
+                    Feed Now!
+                </button>
+                <p id="feedMessage" class="text-sm text-gray-600 mt-4 h-5"></p>
+            </div>
+
+            <!-- Refresh Button Section -->
+            <div class="card bg-gray-50 p-6 rounded-xl shadow-inner flex-1">
+                <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">Refresh Data</h2>
+                <p class="text-gray-700 mb-6">Update status and history.</p>
+                <button id="refreshButton" class="w-full text-lg py-3 px-6 bg-gray-200 text-gray-800 font-bold rounded-xl shadow-lg transition-all duration-300 ease-in-out hover:bg-gray-300 hover:shadow-xl hover:-translate-y-0.5 active:bg-gray-400 active:shadow-inner active:translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400 disabled:shadow-none disabled:transform-none flex items-center justify-center">
+                    Refresh Status & History
+                </button>
+            </div>
+        </div>
+
+        <!-- Feeding History Section -->
+        <div class="card bg-white p-6 rounded-xl shadow-md">
+            <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">Feeding History</h2>
+            <p class="text-gray-700 mb-6">Past feeding events.</p>
+            <div class="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+                <table id="historyTable" class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trigger</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mode</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="eventsContainer" class="bg-white divide-y divide-gray-100">
+                        <!-- Event rows will be dynamically loaded here -->
+                        <tr><td colspan="4" class="px-4 py-4 text-center text-gray-500" id="loadingEvents">Loading feeding history...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="pagination-controls flex justify-between items-center mt-4">
+                <button id="prevPageButton" class="bg-gray-200 text-gray-700 py-2 px-5 rounded-lg font-medium transition-all duration-200 ease-in-out hover:bg-gray-300 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400">Previous</button>
+                <span id="pageInfo" class="text-gray-700 font-medium text-sm sm:text-base">Page 1 of 1</span>
+                <button id="nextPageButton" class="bg-gray-200 text-gray-700 py-2 px-5 rounded-lg font-medium transition-all duration-200 ease-in-out hover:bg-gray-300 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400">Next</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Structure -->
+    <div id="messageModal" class="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50 hidden">
+        <div class="bg-white p-8 rounded-lg shadow-xl max-w-sm w-full text-center">
+            <h3 id="modalTitle" class="text-2xl font-bold text-gray-800 mb-4"></h3>
+            <p id="modalMessage" class="text-gray-700 mb-6"></p>
+            <button id="closeModalButton" class="w-full text-lg py-3 px-6 bg-indigo-600 text-white font-bold rounded-xl shadow-lg transition-all duration-300 ease-in-out hover:bg-indigo-700 active:bg-indigo-800">
+                OK
+            </button>
+        </div>
+    </div>
+
+    <!-- Link to main application JavaScript file -->
+    <!-- CORRECTED: Load Amplify library BEFORE your custom script -->
+    <script src="https://cdn.jsdelivr.net/npm/aws-amplify@6.0.20/dist/aws-amplify.min.js"></script>
+    <script src="js/index.js"></script>
+</body>
+</html>
+
+<!-- public/js/index.js -->
 // public/js/index.js
 
 // IMPORTANT: This placeholder will be replaced by the Amplify build process

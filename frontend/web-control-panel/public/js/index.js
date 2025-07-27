@@ -212,12 +212,6 @@ async function updateDeviceStatus() {
 
 async function handleLogout() {
     try {
-        // Ensure Amplify is defined before calling its methods
-        if (typeof Amplify === 'undefined' || !Amplify.Auth) {
-            console.error("Amplify or Amplify.Auth is not defined when handleLogout is called.");
-            showModal('Logout Error', 'Amplify library not fully loaded. Please try again.');
-            return;
-        }
         await Amplify.Auth.signOut();
         sessionStorage.removeItem('authenticatedUserEmail');
         sessionStorage.removeItem('guestUserName');
@@ -249,42 +243,6 @@ closeModalButton.addEventListener('click', hideModal);
 
 // Initial load logic for index.html
 document.addEventListener('DOMContentLoaded', async () => {
-    // Define amplifyConfig here, within DOMContentLoaded, to ensure window.ENV is available
-    const amplifyConfig = {
-        Auth: {
-            Cognito: {
-                userPoolId: window.ENV?.VITE_USER_POOL_ID,
-                userPoolClientId: window.ENV?.VITE_USER_POOL_CLIENT_ID,
-                region: window.ENV?.VITE_REGION,
-                identityProviders: {
-                    google: {
-                        clientId: window.ENV?.VITE_GOOGLE_CLIENT_ID,
-                        scopes: ['email', 'profile', 'openid']
-                    }
-                },
-                loginWith: {
-                    oauth: {
-                        domain: `${window.ENV?.VITE_USER_POOL_DOMAIN}.auth.${window.ENV?.VITE_REGION}.amazoncognito.com`,
-                        redirectSignIn: `${window.location.origin}/`,
-                        redirectSignOut: `${window.location.origin}/`,
-                        responseType: 'code'
-                    }
-                }
-            }
-        }
-    };
-
-    // Check if Amplify and Amplify.Auth are defined before configuring
-    if (typeof Amplify === 'undefined' || typeof Amplify.Auth === 'undefined') {
-        console.error("Amplify or Amplify.Auth is not defined before configuration in index.js.");
-        showModal('Initialization Error', 'Amplify library failed to load. Please check your network connection or try again later.');
-        return; // Exit if Amplify is not available
-    }
-
-    // Configure Amplify here, after the library is loaded and DOM is ready
-    Amplify.configure(amplifyConfig);
-    console.log("Amplify configured from index.js DOMContentLoaded.");
-
     logoutButton.addEventListener('click', handleLogout); // Attach logout listener here
 
     let userLoggedIn = false;
@@ -301,7 +259,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             userLoggedIn = true;
         }
     } catch (error) {
-        console.log("Error checking current Amplify user (likely no session):", error);
+        console.log("No Amplify authenticated session found or error:", error);
     }
 
     // 2. If no Amplify user, check for guest session

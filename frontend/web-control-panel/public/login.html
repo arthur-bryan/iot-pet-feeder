@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Pet Feeder Login</title>
     <!-- Google Fonts: Inter -->
@@ -10,56 +11,92 @@
     <link rel="stylesheet" href="css/style.css">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Optional favicon -->
+    <!-- <link rel="icon" href="favicon.ico" /> -->
 </head>
 <body class="font-inter antialiased bg-gradient-to-br from-blue-100 to-indigo-200 min-h-screen flex items-center justify-center p-4 sm:p-6">
 
-    <!-- Login Page Content -->
-    <div id="loginPage" class="main-container bg-white rounded-2xl shadow-xl p-6 sm:p-8 w-full max-w-md text-center">
-        <h1 class="text-4xl sm:text-5xl font-extrabold text-gray-900 mb-6 leading-tight">Welcome to Smart Pet Feeder</h1>
-        <p class="text-lg text-gray-600 mb-8">Choose how you'd like to access the control panel.</p>
+<noscript>
+    <div class="bg-red-100 text-red-700 text-center p-4 rounded mb-4">
+        This app requires JavaScript to function properly. Please enable it in your browser settings.
+    </div>
+</noscript>
 
-        <div class="card bg-gray-50 p-6 rounded-xl shadow-inner mb-6">
-            <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">Guest Access</h2>
-            <p class="text-gray-700 mb-4">Enter your name to proceed as a guest.</p>
-            <input type="text" id="guestNameInput" placeholder="Your Name" class="w-full p-3 mb-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-800 text-lg">
-            <button id="guestLoginButton" class="w-full text-lg py-3 px-6 bg-indigo-600 text-white font-bold rounded-xl shadow-lg transition-all duration-300 ease-in-out hover:bg-indigo-700 hover:shadow-xl hover:-translate-y-0.5 active:bg-indigo-800 active:shadow-inner active:translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 -mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
-                </svg>
-                Continue as Guest
-            </button>
-        </div>
+<!-- Login Page Content -->
+<div id="loginPage" class="main-container bg-white rounded-2xl shadow-xl p-6 sm:p-8 w-full max-w-md text-center">
+    <h1 class="text-4xl sm:text-5xl font-extrabold text-gray-900 mb-6 leading-tight">Welcome to Smart Pet Feeder</h1>
+    <p class="text-lg text-gray-600 mb-8">Choose how you'd like to access the control panel.</p>
 
-        <div class="card bg-gray-50 p-6 rounded-xl shadow-inner">
-            <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">Google Login</h2>
-            <p class="text-gray-700 mb-4">Sign in securely with your Google account.</p>
-            <!-- Google Login Button - Removed disabled attribute -->
-            <button id="googleLoginButton" class="w-full text-lg py-3 px-6 bg-red-600 text-white font-bold rounded-xl shadow-lg transition-all duration-300 ease-in-out hover:bg-red-700 hover:shadow-xl hover:-translate-y-0.5 active:bg-red-800 active:shadow-inner active:translate-y-0.5 flex items-center justify-center">
-                <svg class="w-5 h-5 mr-2 -mt-0.5" viewBox="0 0 533.5 544.3" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
-                    <path d="M533.5 272.5c0-18.6-1.5-37.2-4.7-55.3H272.1v104.8h147c-6.1 33.9-25.7 63.7-54.4 82.7v68h87.7c51.5-47.4 81.6-117.4 81.6-201.2z" fill="#4285F4"/>
-                    <path d="M272.1 544.3c73.4 0 135.3-24.1 180.4-65.7l-87.7-68c-24.4 16.6-55.9 26-92.6 26-71 0-131.2-47.9-153.8-112.2H28.9v68.8c46.9 92.3 140.7 155.1 243.2 155.1z" fill="#34A853"/>
-                    <path d="M118.3 324.3c-11.3-33.9-11.3-70.1 0-104.1V150H28.9c-38.6 76.9-38.6 167.5 0 244.4l89.4-68.1z" fill="#FBBC05"/>
-                    <path d="M272.1 107.7c38.8-11.3 79.6-17.5 122.7-17.5 67.6 0 113.8 27.5 152.6 64.6l62.9-62.9C432.1 27.5 354.7 0 272.1 0 169.6 0 75.8 62.7 28.9 155l89.4 68.2c22.6-64.2 82.8-112.1 153.8-112.1z" fill="#EA4335"/>
-                </svg>
-                Sign in with Google
-            </button>
-        </div>
+    <!-- Guest Access -->
+    <div class="card bg-gray-50 p-6 rounded-xl shadow-inner mb-6">
+        <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">Guest Access</h2>
+        <p class="text-gray-700 mb-4">Enter your name to proceed as a guest.</p>
+        <input type="text" id="guestNameInput" placeholder="Your Name" class="w-full p-3 mb-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-800 text-lg">
+        <button id="guestLoginButton" aria-label="Continue as Guest" class="w-full text-lg py-3 px-6 bg-indigo-600 text-white font-bold rounded-xl shadow-lg transition-all duration-300 ease-in-out hover:bg-indigo-700 hover:shadow-xl hover:-translate-y-0.5 active:bg-indigo-800 active:shadow-inner active:translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 -mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+            </svg>
+            Continue as Guest
+        </button>
     </div>
 
-    <!-- Modal Structure -->
-    <div id="messageModal" class="fixed inset-0 bg-gray-600 bg-opacity-75 hidden flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-lg shadow-xl p-6 sm:p-8 max-w-sm w-full text-center">
-            <h3 id="modalTitle" class="text-2xl font-bold text-gray-900 mb-4"></h3>
-            <p id="modalMessage" class="text-gray-700 mb-6"></p>
-            <button id="closeModalButton" class="w-full py-2 px-4 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75">
-                OK
-            </button>
-        </div>
+    <!-- Google Login -->
+    <div class="card bg-gray-50 p-6 rounded-xl shadow-inner">
+        <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">Google Login</h2>
+        <p class="text-gray-700 mb-4">Sign in securely with your Google account.</p>
+        <button id="googleLoginButton" aria-label="Sign in with Google" class="w-full text-lg py-3 px-6 bg-red-600 text-white font-bold rounded-xl shadow-lg transition-all duration-300 ease-in-out hover:bg-red-700 hover:shadow-xl hover:-translate-y-0.5 active:bg-red-800 active:shadow-inner active:translate-y-0.5 flex items-center justify-center">
+            <svg class="w-5 h-5 mr-2 -mt-0.5" viewBox="0 0 533.5 544.3" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+                <path d="M533.5 272.5c0-18.6-1.5-37.2-4.7-55.3H272.1v104.8h147c-6.1 33.9-25.7 63.7-54.4 82.7v68h87.7c51.5-47.4 81.6-117.4 81.6-201.2z" fill="#4285F4"/>
+                <path d="M272.1 544.3c73.4 0 135.3-24.1 180.4-65.7l-87.7-68c-24.4 16.6-55.9 26-92.6 26-71 0-131.2-47.9-153.8-112.2H28.9v68.8c46.9 92.3 140.7 155.1 243.2 155.1z" fill="#34A853"/>
+                <path d="M118.3 324.3c-11.3-33.9-11.3-70.1 0-104.1V150H28.9c-38.6 76.9-38.6 167.5 0 244.4l89.4-68.1z" fill="#FBBC05"/>
+                <path d="M272.1 107.7c38.8-11.3 79.6-17.5 122.7-17.5 67.6 0 113.8 27.5 152.6 64.6l62.9-62.9C432.1 27.5 354.7 0 272.1 0 169.6 0 75.8 62.7 28.9 155l89.4 68.2c22.6-64.2 82.8-112.1 153.8-112.1z" fill="#EA4335"/>
+            </svg>
+            Sign in with Google
+        </button>
     </div>
+</div>
 
-    <!-- Load env-config.js first, then Amplify, then your scripts -->
-    <script src="env-config.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/aws-amplify/3.3.9-sdk-bump.15/aws-amplify.min.js"></script>
-    <script src="js/login.js"></script>
+<!-- Modal -->
+<div id="messageModal" role="dialog" aria-modal="true" class="fixed inset-0 bg-gray-600 bg-opacity-75 hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-lg shadow-xl p-6 sm:p-8 max-w-sm w-full text-center">
+        <h3 id="modalTitle" class="text-2xl font-bold text-gray-900 mb-4"></h3>
+        <p id="modalMessage" class="text-gray-700 mb-6"></p>
+        <button id="closeModalButton" aria-label="Close Modal" class="w-full py-2 px-4 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75">
+            OK
+        </button>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="env-config.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/aws-amplify/3.3.9-sdk-bump.15/aws-amplify.min.js" defer></script>
+<script defer>
+    const amplifyConfig = {
+        Auth: {
+            Cognito: {
+                userPoolId: window.ENV?.VITE_USER_POOL_ID,
+                userPoolClientId: window.ENV?.VITE_USER_POOL_CLIENT_ID,
+                region: window.ENV?.VITE_REGION,
+                identityProviders: {
+                    google: {
+                        clientId: window.ENV?.VITE_GOOGLE_CLIENT_ID,
+                        scopes: ['email', 'profile', 'openid']
+                    }
+                },
+                loginWith: {
+                    oauth: {
+                        domain: `${window.ENV?.VITE_USER_POOL_DOMAIN}.auth.${window.ENV?.VITE_REGION}.amazoncognito.com`,
+                        redirectSignIn: `${window.location.origin}/`,
+                        redirectSignOut: `${window.location.origin}/`,
+                        responseType: 'code'
+                    }
+                }
+            }
+        }
+    };
+    Amplify.configure(amplifyConfig);
+    console.log("Amplify configured from inline script in login.html");
+</script>
+<script src="js/login.js" defer></script>
 </body>
 </html>

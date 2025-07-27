@@ -41,9 +41,6 @@ const amplifyConfig = {
     }
 };
 
-// Configure Amplify immediately when the script loads
-Amplify.configure(amplifyConfig);
-
 // --- Helper Functions for Modal ---
 function showModal(title, message) {
     modalTitle.textContent = title;
@@ -117,6 +114,9 @@ Amplify.Hub.listen('auth', ({ payload }) => {
 
 // Initial load logic for login.html
 document.addEventListener('DOMContentLoaded', async () => {
+    // Configure Amplify when the DOM is ready
+    Amplify.configure(amplifyConfig);
+
     const storedGuestName = sessionStorage.getItem('guestUserName');
     if (storedGuestName) {
         window.location.href = 'index.html';

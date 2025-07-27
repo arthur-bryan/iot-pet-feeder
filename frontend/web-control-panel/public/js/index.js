@@ -56,9 +56,6 @@ const amplifyConfig = {
     }
 };
 
-// Configure Amplify immediately when the script loads
-Amplify.configure(amplifyConfig);
-
 // --- Helper Functions ---
 
 function formatTimestamp(isoString) {
@@ -279,6 +276,9 @@ closeModalButton.addEventListener('click', hideModal);
 
 // Initial load logic for index.html
 document.addEventListener('DOMContentLoaded', async () => {
+    // Configure Amplify when the DOM is ready
+    Amplify.configure(amplifyConfig);
+
     let userLoggedIn = false;
 
     // 1. Try to get current Amplify authenticated user

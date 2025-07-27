@@ -57,9 +57,37 @@
         </div>
     </div>
 
-    <!-- Load env-config.js first, then Amplify, then your scripts -->
+    <!-- Load env-config.js first, then Amplify, then configure Amplify immediately -->
     <script src="env-config.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/aws-amplify/3.3.9-sdk-bump.15/aws-amplify.min.js"></script>
+    <script>
+        // Configure Amplify immediately after the library is loaded
+        const amplifyConfig = {
+            Auth: {
+                Cognito: {
+                    userPoolId: window.ENV?.VITE_USER_POOL_ID,
+                    userPoolClientId: window.ENV?.VITE_USER_POOL_CLIENT_ID,
+                    region: window.ENV?.VITE_REGION,
+                    identityProviders: {
+                        google: {
+                            clientId: window.ENV?.VITE_GOOGLE_CLIENT_ID,
+                            scopes: ['email', 'profile', 'openid']
+                        }
+                    },
+                    loginWith: {
+                        oauth: {
+                            domain: `${window.ENV?.VITE_USER_POOL_DOMAIN}.auth.${window.ENV?.VITE_REGION}.amazoncognito.com`,
+                            redirectSignIn: `${window.location.origin}/`,
+                            redirectSignOut: `${window.location.origin}/`,
+                            responseType: 'code'
+                        }
+                    }
+                }
+            }
+        };
+        Amplify.configure(amplifyConfig);
+        console.log("Amplify configured from inline script in login.html");
+    </script>
     <script src="js/login.js"></script>
 </body>
 </html>

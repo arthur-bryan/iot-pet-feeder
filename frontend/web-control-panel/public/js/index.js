@@ -29,33 +29,6 @@ let currentUserName = "Guest";
 
 let statusPollingInterval = null;
 
-// --- Amplify Configuration ---
-console.log("window.ENV:", window.ENV); // For debugging: check if window.ENV is populated
-
-const amplifyConfig = {
-    Auth: {
-        Cognito: {
-            userPoolId: window.ENV?.VITE_USER_POOL_ID,
-            userPoolClientId: window.ENV?.VITE_USER_POOL_CLIENT_ID,
-            region: window.ENV?.VITE_REGION,
-            identityProviders: {
-                google: {
-                    clientId: window.ENV?.VITE_GOOGLE_CLIENT_ID,
-                    scopes: ['email', 'profile', 'openid']
-                }
-            },
-            loginWith: {
-                oauth: {
-                    domain: `${window.ENV?.VITE_USER_POOL_DOMAIN}.auth.${window.ENV?.VITE_REGION}.amazoncognito.com`,
-                    redirectSignIn: `${window.location.origin}/`,
-                    redirectSignOut: `${window.location.origin}/`,
-                    responseType: 'code'
-                }
-            }
-        }
-    }
-};
-
 // --- Helper Functions ---
 
 function formatTimestamp(isoString) {
@@ -276,9 +249,6 @@ closeModalButton.addEventListener('click', hideModal);
 
 // Initial load logic for index.html
 document.addEventListener('DOMContentLoaded', async () => {
-    // Configure Amplify when the DOM is ready
-    Amplify.configure(amplifyConfig);
-
     let userLoggedIn = false;
 
     // 1. Try to get current Amplify authenticated user

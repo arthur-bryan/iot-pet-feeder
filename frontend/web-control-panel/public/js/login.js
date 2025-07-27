@@ -14,33 +14,6 @@ const modalTitle = document.getElementById('modalTitle');
 const modalMessage = document.getElementById('modalMessage');
 const closeModalButton = document.getElementById('closeModalButton');
 
-// --- Amplify Configuration ---
-console.log("window.ENV (login.js):", window.ENV); // For debugging
-
-const amplifyConfig = {
-    Auth: {
-        Cognito: {
-            userPoolId: window.ENV?.VITE_USER_POOL_ID,
-            userPoolClientId: window.ENV?.VITE_USER_POOL_CLIENT_ID,
-            region: window.ENV?.VITE_REGION,
-            identityProviders: {
-                google: {
-                    clientId: window.ENV?.VITE_GOOGLE_CLIENT_ID,
-                    scopes: ['email', 'profile', 'openid']
-                }
-            },
-            loginWith: {
-                oauth: {
-                    domain: `${window.ENV?.VITE_USER_POOL_DOMAIN}.auth.${window.ENV?.VITE_REGION}.amazoncognito.com`,
-                    redirectSignIn: `${window.location.origin}/`,
-                    redirectSignOut: `${window.location.origin}/`,
-                    responseType: 'code'
-                }
-            }
-        }
-    }
-};
-
 // --- Helper Functions for Modal ---
 function showModal(title, message) {
     modalTitle.textContent = title;
@@ -114,9 +87,6 @@ Amplify.Hub.listen('auth', ({ payload }) => {
 
 // Initial load logic for login.html
 document.addEventListener('DOMContentLoaded', async () => {
-    // Configure Amplify when the DOM is ready
-    Amplify.configure(amplifyConfig);
-
     const storedGuestName = sessionStorage.getItem('guestUserName');
     if (storedGuestName) {
         window.location.href = 'index.html';

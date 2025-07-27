@@ -1,4 +1,4 @@
-import { Amplify } from 'aws-amplify'; // ADDED: Explicit import for Amplify
+// public/js/index.js
 
 // IMPORTANT: This placeholder will be replaced by the Amplify build process
 // with the actual API Gateway URL from your deployment environment.
@@ -14,11 +14,11 @@ const pageInfo = document.getElementById('pageInfo');
 const deviceStatusElement = document.getElementById('deviceStatus');
 const statusMessageElement = document.getElementById('statusMessage');
 const refreshButton = document.getElementById('refreshButton');
-const userNameDisplay = document.getElementById('userNameDisplay'); // New element
-const logoutButton = document.getElementById('logoutButton');       // New element
+const userNameDisplay = document.getElementById('userNameDisplay');
+const logoutButton = document.getElementById('logoutButton');
 
 // --- Modal Elements ---
-const messageModal = document.getElementById('messageModal'); // Re-using the generic modal
+const messageModal = document.getElementById('messageModal');
 const modalTitle = document.getElementById('modalTitle');
 const modalMessage = document.getElementById('modalMessage');
 const closeModalButton = document.getElementById('closeModalButton');
@@ -26,12 +26,11 @@ const closeModalButton = document.getElementById('closeModalButton');
 const ITEMS_PER_PAGE = 10;
 let currentPage = 1;
 let totalPages = 1;
-let currentUserName = "Guest"; // Default user name, will be overwritten by session storage
+let currentUserName = "Guest";
 
-let statusPollingInterval = null; // Variable to hold the interval ID for polling
+let statusPollingInterval = null;
 
 // --- Amplify Configuration ---
-// Log window.ENV to console for debugging environment variables
 console.log("window.ENV:", window.ENV);
 
 const amplifyConfig = {
@@ -57,9 +56,6 @@ const amplifyConfig = {
         }
     }
 };
-
-// Moved Amplify.configure inside DOMContentLoaded
-// Amplify.configure(amplifyConfig);
 
 // --- Helper Functions ---
 
@@ -96,14 +92,14 @@ function getStatusClass(status) {
 function showModal(title, message) {
     modalTitle.textContent = title;
     modalMessage.textContent = message;
-    messageModal.classList.remove('hidden'); // Show the modal
+    messageModal.classList.remove('hidden');
 }
 
 /**
  * Hides the custom modal.
  */
 function hideModal() {
-    messageModal.classList.add('hidden'); // Hide the modal
+    messageModal.classList.add('hidden');
 }
 
 // --- API Calls ---
@@ -114,12 +110,12 @@ async function sendFeedCommand() {
     const currentFeederStatus = deviceStatusElement.textContent.toUpperCase();
     if (currentFeederStatus === 'OPENING' || currentFeederStatus === 'OPEN' || currentFeederStatus === 'CLOSING') {
         showModal('Feeder Busy', 'The feeder is currently busy. Please wait a moment before sending another command.');
-        return; // Exit the function if busy
+        return;
     }
 
     feedButton.disabled = true;
     feedMessage.textContent = "Sending feed command...";
-    feedMessage.className = "text-sm text-gray-600 mt-3"; // Reset class
+    feedMessage.className = "text-sm text-gray-600 mt-3";
 
     try {
         const response = await fetch(`${API_BASE_URL}/api/v1/feed/`, {
@@ -127,7 +123,6 @@ async function sendFeedCommand() {
             headers: {
                 'Content-Type': 'application/json'
             },
-            // Use the currentUserName for requested_by
             body: JSON.stringify({ "requested_by": currentUserName, "mode": "manual" })
         });
 
@@ -140,16 +135,14 @@ async function sendFeedCommand() {
         feedMessage.textContent = `Command sent! Status: ${data.status.toUpperCase()}`;
         feedMessage.className = "text-sm text-green-600 mt-3 font-semibold";
 
-        // Refresh history and device status immediately after sending command
-        fetchFeedHistory(1); // Go back to first page after a new feed
-        updateDeviceStatus(); // Also update device status immediately
+        setTimeout(() => {
+            fetchFeedHistory(1);
+        }, 1500);
 
-        // Start polling for status updates for 5 seconds
         let pollCount = 0;
-        const maxPolls = 5; // Poll for 5 seconds
-        const pollIntervalMs = 1000; // Every 1 second
+        const maxPolls = 5;
+        const pollIntervalMs = 1000;
 
-        // Clear any existing polling interval to prevent multiple intervals running
         if (statusPollingInterval) {
             clearInterval(statusPollingInterval);
         }
@@ -161,7 +154,7 @@ async function sendFeedCommand() {
                 pollCount++;
             } else {
                 clearInterval(statusPollingInterval);
-                statusPollingInterval = null; // Reset the interval ID
+                statusPollingInterval = null;
                 console.log("Status polling finished.");
             }
         }, pollIntervalMs);
@@ -171,13 +164,12 @@ async function sendFeedCommand() {
         feedMessage.textContent = `Failed to send command: ${error.message}`;
         feedMessage.className = "text-sm text-red-600 mt-3 font-semibold";
     } finally {
-        feedButton.disabled = false; // Re-enable button directly here
+        feedButton.disabled = false;
     }
 }
 
 // Function to fetch and display feeding history
 async function fetchFeedHistory(page = 1) {
-    // Clear previous events and show loading message
     eventsContainer.innerHTML = `<tr><td colspan="4" class="px-4 py-4 text-center text-gray-500" id="loadingEvents">Loading feeding history...</td></tr>`;
     pageInfo.textContent = `Loading...`;
     prevPageButton.disabled = true;
@@ -192,7 +184,7 @@ async function fetchFeedHistory(page = 1) {
         }
         const data = await response.json();
 
-        eventsContainer.innerHTML = ''; // Clear loading message
+        eventsContainer.innerHTML = '';
 
         if (data.items && data.items.length > 0) {
             data.items.forEach(event => {
@@ -251,7 +243,7 @@ async function handleLogout() {
         await Amplify.Auth.signOut();
         sessionStorage.removeItem('authenticatedUserEmail');
         sessionStorage.removeItem('guestUserName');
-        window.location.href = 'login.html'; // Redirect to login page after logout
+        window.location.href = 'login.html';
     } catch (error) {
         console.error("Error during logout:", error);
         showModal('Logout Error', `Failed to log out: ${error.message}`);
@@ -279,15 +271,14 @@ refreshButton.addEventListener('click', () => {
     updateDeviceStatus();
 });
 
-logoutButton.addEventListener('click', handleLogout); // New event listener for logout
+logoutButton.addEventListener('click', handleLogout);
 
-// Event listener for closing the modal
 closeModalButton.addEventListener('click', hideModal);
 
 // Initial load logic for index.html
 document.addEventListener('DOMContentLoaded', async () => {
     // Configure Amplify when the DOM is ready
-    Amplify.configure(amplifyConfig); // MOVED: Configure Amplify here
+    Amplify.configure(amplifyConfig);
 
     let userLoggedIn = false;
 
@@ -298,13 +289,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.log("Amplify authenticated user found:", user);
             currentUserName = user.signInDetails.loginId || user.username || user.attributes.email || "Authenticated User";
             sessionStorage.setItem('authenticatedUserEmail', currentUserName);
-            sessionStorage.removeItem('guestUserName'); // Clear guest session if authenticated
+            sessionStorage.removeItem('guestUserName');
             userNameDisplay.textContent = `Welcome, ${currentUserName}!`;
             userLoggedIn = true;
         }
     } catch (error) {
         console.log("No Amplify authenticated session found or error:", error);
-        // This is expected if no user is logged in via Amplify
     }
 
     // 2. If no Amplify user, check for guest session
@@ -322,7 +312,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!userLoggedIn) {
         console.log("No user session found. Redirecting to login.html");
         window.location.href = 'login.html';
-        return; // Stop further execution on this page
+        return;
     }
 
     // If a user is logged in (either authenticated or guest), load app content
@@ -330,7 +320,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     fetchFeedHistory(1);
     updateDeviceStatus();
 
-    // Periodically refresh history (e.g., every 30 seconds) and device status (e.g., every 5 seconds)
     setInterval(() => fetchFeedHistory(currentPage), 30000);
-    setInterval(updateDeviceStatus, 5000); // Update status every 5 seconds
+    setInterval(updateDeviceStatus, 5000);
 });

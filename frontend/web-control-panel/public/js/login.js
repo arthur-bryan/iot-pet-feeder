@@ -73,6 +73,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
     };
+
+    // Check if Amplify and Amplify.Auth are defined before configuring
+    if (typeof Amplify === 'undefined' || typeof Amplify.Auth === 'undefined') {
+        console.error("Amplify or Amplify.Auth is not defined before configuration in login.js.");
+        showModal('Initialization Error', 'Amplify library failed to load. Please check your network connection or try again later.');
+        return; // Exit if Amplify is not available
+    }
+
     // Configure Amplify here, after the library is loaded and DOM is ready
     Amplify.configure(amplifyConfig);
     console.log("Amplify configured from login.js DOMContentLoaded.");

@@ -273,6 +273,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
     };
+
+    // Check if Amplify and Amplify.Auth are defined before configuring
+    if (typeof Amplify === 'undefined' || typeof Amplify.Auth === 'undefined') {
+        console.error("Amplify or Amplify.Auth is not defined before configuration in index.js.");
+        showModal('Initialization Error', 'Amplify library failed to load. Please check your network connection or try again later.');
+        return; // Exit if Amplify is not available
+    }
+
     // Configure Amplify here, after the library is loaded and DOM is ready
     Amplify.configure(amplifyConfig);
     console.log("Amplify configured from index.js DOMContentLoaded.");
@@ -293,7 +301,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             userLoggedIn = true;
         }
     } catch (error) {
-        console.log("No Amplify authenticated session found or error:", error);
+        console.log("Error checking current Amplify user (likely no session):", error);
     }
 
     // 2. If no Amplify user, check for guest session

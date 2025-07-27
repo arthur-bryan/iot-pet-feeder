@@ -49,44 +49,46 @@ async function handleGoogleLogin() {
 // --- Event Listeners & Initial Load ---
 
 guestLoginButton.addEventListener('click', handleGuestLogin);
-googleLoginButton.addEventListener('click', handleGoogleLogin);
 closeModalButton.addEventListener('click', hideModal);
-
-// Amplify Auth Hub Listener to handle sign-in events after redirect
-Amplify.Hub.listen('auth', ({ payload }) => {
-    const { event } = payload;
-    console.log("Auth event:", event, payload);
-
-    if (event === 'signedIn') {
-        console.log('User signed in successfully!');
-        sessionStorage.setItem('authenticatedUserEmail', payload.data.signInDetails.loginId);
-        sessionStorage.removeItem('guestUserName');
-        window.location.href = 'index.html';
-    } else if (event === 'signedOut') {
-        console.log('User signed out.');
-        sessionStorage.removeItem('authenticatedUserEmail');
-        sessionStorage.removeItem('guestUserName');
-    } else if (event === 'signInWithRedirect') {
-        showModal('Authentication', 'Redirecting to Google for sign-in...');
-    } else if (event === 'signInWithRedirect_failure') {
-        showModal('Login Failed', `Google sign-in failed: ${payload.data?.message || 'Unknown error'}. Please try again.`);
-    } else if (event === 'autoSignIn') {
-        console.log('Auto sign-in successful.');
-        sessionStorage.setItem('authenticatedUserEmail', payload.data.signInDetails.loginId);
-        sessionStorage.removeItem('guestUserName');
-        window.location.href = 'index.html';
-    } else if (event === 'autoSignIn_failure') {
-        console.log('Auto sign-in failed:', payload.data);
-        if (payload.data && payload.data.message && payload.data.message.includes('User is not confirmed')) {
-            showModal('Approval Pending', 'Your account requires admin approval. Please wait for an administrator to activate your access.');
-        } else {
-            showModal('Session Expired', 'Your session has expired or auto-login failed. Please sign in again.');
-        }
-    }
-});
 
 // Initial load logic for login.html
 document.addEventListener('DOMContentLoaded', async () => {
+    // Attach Google Login Button listener here to ensure Amplify is available
+    googleLoginButton.addEventListener('click', handleGoogleLogin);
+
+    // Amplify Auth Hub Listener to handle sign-in events after redirect
+    Amplify.Hub.listen('auth', ({ payload }) => {
+        const { event } = payload;
+        console.log("Auth event:", event, payload);
+
+        if (event === 'signedIn') {
+            console.log('User signed in successfully!');
+            sessionStorage.setItem('authenticatedUserEmail', payload.data.signInDetails.loginId);
+            sessionStorage.removeItem('guestUserName');
+            window.location.href = 'index.html';
+        } else if (event === 'signedOut') {
+            console.log('User signed out.');
+            sessionStorage.removeItem('authenticatedUserEmail');
+            sessionStorage.removeItem('guestUserName');
+        } else if (event === 'signInWithRedirect') {
+            showModal('Authentication', 'Redirecting to Google for sign-in...');
+        } else if (event === 'signInWithRedirect_failure') {
+            showModal('Login Failed', `Google sign-in failed: ${payload.data?.message || 'Unknown error'}. Please try again.`);
+        } else if (event === 'autoSignIn') {
+            console.log('Auto sign-in successful.');
+            sessionStorage.setItem('authenticatedUserEmail', payload.data.signInDetails.loginId);
+            sessionStorage.removeItem('guestUserName');
+            window.location.href = 'index.html';
+        } else if (event === 'autoSignIn_failure') {
+            console.log('Auto sign-in failed:', payload.data);
+            if (payload.data && payload.data.message && payload.data.message.includes('User is not confirmed')) {
+                showModal('Approval Pending', 'Your account requires admin approval. Please wait for an administrator to activate your access.');
+            } else {
+                showModal('Session Expired', 'Your session has expired or auto-login failed. Please sign in again.');
+            }
+        }
+    });
+
     const storedGuestName = sessionStorage.getItem('guestUserName');
     if (storedGuestName) {
         window.location.href = 'index.html';

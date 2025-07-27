@@ -225,30 +225,26 @@ async function handleLogout() {
 // --- Event Listeners & Initial Load ---
 
 feedButton.addEventListener('click', sendFeedCommand);
-
 prevPageButton.addEventListener('click', () => {
     if (currentPage > 1) {
         fetchFeedHistory(currentPage - 1);
     }
 });
-
 nextPageButton.addEventListener('click', () => {
     if (currentPage < totalPages) {
         fetchFeedHistory(currentPage + 1);
     }
 });
-
 refreshButton.addEventListener('click', () => {
     fetchFeedHistory(1);
     updateDeviceStatus();
 });
-
-logoutButton.addEventListener('click', handleLogout);
-
 closeModalButton.addEventListener('click', hideModal);
 
 // Initial load logic for index.html
 document.addEventListener('DOMContentLoaded', async () => {
+    logoutButton.addEventListener('click', handleLogout); // Attach logout listener here
+
     let userLoggedIn = false;
 
     // 1. Try to get current Amplify authenticated user

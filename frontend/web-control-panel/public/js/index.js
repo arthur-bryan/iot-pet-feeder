@@ -14,9 +14,11 @@ const pageInfo = document.getElementById('pageInfo');
 const deviceStatusElement = document.getElementById('deviceStatus');
 const statusMessageElement = document.getElementById('statusMessage');
 const refreshButton = document.getElementById('refreshButton');
+const userNameDisplay = document.getElementById('userNameDisplay'); // New element
+const logoutButton = document.getElementById('logoutButton');       // New element
 
 // --- Modal Elements ---
-const busyModal = document.getElementById('busyModal');
+const messageModal = document.getElementById('messageModal'); // Re-using the generic modal
 const modalTitle = document.getElementById('modalTitle');
 const modalMessage = document.getElementById('modalMessage');
 const closeModalButton = document.getElementById('closeModalButton');
@@ -27,6 +29,33 @@ let totalPages = 1;
 let currentUserName = "Guest"; // Default user name, will be overwritten by session storage
 
 let statusPollingInterval = null; // Variable to hold the interval ID for polling
+
+// --- Amplify Configuration ---
+const amplifyConfig = {
+    Auth: {
+        Cognito: {
+            userPoolId: window.ENV?.VITE_USER_POOL_ID,
+            userPoolClientId: window.ENV?.VITE_USER_POOL_CLIENT_ID,
+            region: window.ENV?.VITE_REGION,
+            identityProviders: {
+                google: {
+                    clientId: window.ENV?.VITE_GOOGLE_CLIENT_ID,
+                    scopes: ['email', 'profile', 'openid']
+                }
+            },
+            loginWith: {
+                oauth: {
+                    domain: `${window.ENV?.VITE_USER_POOL_DOMAIN}.auth.${window.ENV?.VITE_REGION}.amazoncognito.com`,
+                    redirectSignIn: `${window.location.origin}/`,
+                    redirectSignOut: `${window.location.origin}/`,
+                    responseType: 'code'
+                }
+            }
+        }
+    }
+};
+
+Amplify.configure(amplifyConfig);
 
 // --- Helper Functions ---
 
@@ -63,14 +92,14 @@ function getStatusClass(status) {
 function showModal(title, message) {
     modalTitle.textContent = title;
     modalMessage.textContent = message;
-    busyModal.classList.remove('hidden'); // Show the modal
+    messageModal.classList.remove('hidden'); // Show the modal
 }
 
 /**
  * Hides the custom modal.
  */
 function hideModal() {
-    busyModal.classList.add('hidden'); // Hide the modal
+    messageModal.classList.add('hidden'); // Hide the modal
 }
 
 // --- API Calls ---
@@ -211,6 +240,20 @@ async function updateDeviceStatus() {
     }
 }
 
+// --- Authentication & Session Management ---
+
+async function handleLogout() {
+    try {
+        await Amplify.Auth.signOut();
+        sessionStorage.removeItem('authenticatedUserEmail');
+        sessionStorage.removeItem('guestUserName');
+        window.location.href = 'login.html'; // Redirect to login page after logout
+    } catch (error) {
+        console.error("Error during logout:", error);
+        showModal('Logout Error', `Failed to log out: ${error.message}`);
+    }
+}
+
 // --- Event Listeners & Initial Load ---
 
 feedButton.addEventListener('click', sendFeedCommand);
@@ -232,19 +275,55 @@ refreshButton.addEventListener('click', () => {
     updateDeviceStatus();
 });
 
+logoutButton.addEventListener('click', handleLogout); // New event listener for logout
+
 // Event listener for closing the modal
 closeModalButton.addEventListener('click', hideModal);
 
 // Initial load logic for index.html
-document.addEventListener('DOMContentLoaded', () => {
-    const storedGuestName = sessionStorage.getItem('guestUserName');
-    if (!storedGuestName) {
-        // If no guest name is found, redirect to login page
-        window.location.href = 'login.html';
-    } else {
-        // If guest name is found, set it and load app content
-        currentUserName = storedGuestName;
-        fetchFeedHistory(1);
-        updateDeviceStatus();
+document.addEventListener('DOMContentLoaded', async () => {
+    let userLoggedIn = false;
+
+    // 1. Try to get current Amplify authenticated user
+    try {
+        const user = await Amplify.Auth.getCurrentUser();
+        if (user) {
+            console.log("Amplify authenticated user found:", user);
+            currentUserName = user.signInDetails.loginId || user.username || user.attributes.email || "Authenticated User";
+            sessionStorage.setItem('authenticatedUserEmail', currentUserName);
+            sessionStorage.removeItem('guestUserName'); // Clear guest session if authenticated
+            userNameDisplay.textContent = `Welcome, ${currentUserName}!`;
+            userLoggedIn = true;
+        }
+    } catch (error) {
+        console.log("No Amplify authenticated session found or error:", error);
+        // This is expected if no user is logged in via Amplify
     }
+
+    // 2. If no Amplify user, check for guest session
+    if (!userLoggedIn) {
+        const storedGuestName = sessionStorage.getItem('guestUserName');
+        if (storedGuestName) {
+            console.log("Guest session found:", storedGuestName);
+            currentUserName = storedGuestName;
+            userNameDisplay.textContent = `Welcome, ${currentUserName}!`;
+            userLoggedIn = true;
+        }
+    }
+
+    // 3. If no user (Amplify or Guest), redirect to login page
+    if (!userLoggedIn) {
+        console.log("No user session found. Redirecting to login.html");
+        window.location.href = 'login.html';
+        return; // Stop further execution on this page
+    }
+
+    // If a user is logged in (either authenticated or guest), load app content
+    console.log(`User "${currentUserName}" is logged in. Loading app content.`);
+    fetchFeedHistory(1);
+    updateDeviceStatus();
+
+    // Periodically refresh history (e.g., every 30 seconds) and device status (e.g., every 5 seconds)
+    setInterval(() => fetchFeedHistory(currentPage), 30000);
+    setInterval(updateDeviceStatus, 5000); // Update status every 5 seconds
 });

@@ -15,7 +15,13 @@
 
     <!-- Main Application Content -->
     <div id="appContent" class="main-container bg-white rounded-2xl shadow-xl p-6 sm:p-8 w-full max-w-2xl text-center">
-        <h1 class="text-4xl sm:text-5xl font-extrabold text-gray-900 mb-6 leading-tight">Smart Pet Feeder</h1>
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-4xl sm:text-5xl font-extrabold text-gray-900 leading-tight">Smart Pet Feeder</h1>
+            <div class="text-right">
+                <p id="userNameDisplay" class="text-lg font-medium text-gray-700">Welcome, Guest!</p>
+                <button id="logoutButton" class="text-sm text-indigo-600 hover:text-indigo-800 transition-colors duration-200">Logout</button>
+            </div>
+        </div>
         <p class="text-lg text-gray-600 mb-8">Manage your pet's meals with ease, from anywhere.</p>
 
         <!-- Device Status Section -->
@@ -31,7 +37,7 @@
             <div class="card bg-gradient-to-r from-indigo-50 to-blue-50 p-6 rounded-xl shadow-inner flex-1">
                 <h2 class="text-2xl sm:text-3xl font-bold text-indigo-800 mb-4">Manual Feed</h2>
                 <p class="text-gray-700 mb-6">Dispense food instantly with a single tap.</p>
-                <button id="feedButton" class="w-full text-lg py-3 px-6 bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-bold rounded-xl shadow-lg transition-all duration-300 ease-in-out hover:from-indigo-700 hover:to-blue-700 hover:shadow-xl hover:-translate-y-0.5 active:from-indigo-800 active:to-blue-800 active:shadow-inner active:translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-500 disabled:shadow-none disabled:transform-none flex items-center justify-center">
+                <button id="feedButton" class="w-full text-lg py-3 px-6 bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-bold rounded-xl shadow-lg transition-all duration-300 ease-in-out hover:from-indigo-700 hover:to-blue-700 hover:shadow-xl hover:-translate-y-0.5 active:from-indigo-800 active:to-blue-800 active:shadow-inner active:translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-500 disabled:shadow-none disabled:transform-none">
                     Feed Now!
                 </button>
                 <p id="feedMessage" class="text-sm text-gray-600 mt-4 h-5"></p>
@@ -77,10 +83,10 @@
     </div>
 
     <!-- Modal Structure -->
-    <div id="busyModal" class="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50 hidden">
+    <div id="messageModal" class="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50 hidden">
         <div class="bg-white p-8 rounded-lg shadow-xl max-w-sm w-full text-center">
-            <h3 id="modalTitle" class="text-2xl font-bold text-gray-800 mb-4">Feeder Busy</h3>
-            <p id="modalMessage" class="text-gray-700 mb-6">The feeder is currently busy. Please wait a moment before sending another command.</p>
+            <h3 id="modalTitle" class="text-2xl font-bold text-gray-800 mb-4"></h3>
+            <p id="modalMessage" class="text-gray-700 mb-6"></p>
             <button id="closeModalButton" class="w-full text-lg py-3 px-6 bg-indigo-600 text-white font-bold rounded-xl shadow-lg transition-all duration-300 ease-in-out hover:bg-indigo-700 active:bg-indigo-800">
                 OK
             </button>
@@ -88,6 +94,7 @@
     </div>
 
     <!-- Link to main application JavaScript file -->
+    <script src="https://cdn.jsdelivr.net/npm/aws-amplify@6.0.20/dist/aws-amplify.min.js"></script>
     <script src="js/index.js"></script>
 </body>
 </html>

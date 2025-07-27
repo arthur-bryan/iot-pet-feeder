@@ -1,8 +1,7 @@
 // public/js/index.js
 
-// IMPORTANT: This placeholder will be replaced by the Amplify build process
-// with the actual API Gateway URL from your deployment environment.
-const API_BASE_URL = "REPLACE_API_BASE_URL";
+// API_BASE_URL will now be read from window.ENV
+const API_BASE_URL = window.ENV?.VITE_API_BASE_URL;
 
 // --- Main App Elements ---
 const feedButton = document.getElementById('feedButton');
@@ -31,7 +30,7 @@ let currentUserName = "Guest";
 let statusPollingInterval = null;
 
 // --- Amplify Configuration ---
-console.log("window.ENV:", window.ENV);
+console.log("window.ENV:", window.ENV); // For debugging: check if window.ENV is populated
 
 const amplifyConfig = {
     Auth: {
@@ -58,7 +57,7 @@ const amplifyConfig = {
 };
 
 // Configure Amplify immediately when the script loads
-Amplify.configure(amplifyConfig); // MOVED: Configure Amplify here to ensure it's available
+Amplify.configure(amplifyConfig);
 
 // --- Helper Functions ---
 
@@ -243,7 +242,6 @@ async function updateDeviceStatus() {
 
 async function handleLogout() {
     try {
-        // Amplify is now configured at the top-level, so it should be defined here
         await Amplify.Auth.signOut();
         sessionStorage.removeItem('authenticatedUserEmail');
         sessionStorage.removeItem('guestUserName');

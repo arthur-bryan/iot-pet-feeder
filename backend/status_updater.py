@@ -3,59 +3,93 @@ import json
 import os
 import boto3
 from datetime import datetime
+from botocore.exceptions import ClientError
 
-# Initialize DynamoDB client
-dynamodb = boto3.resource('dynamodb')
+
+DYNAMODB_TABLE_NAME = os.environ.get("DEVICE_STATUS_TABLE_NAME")
+IOT_THING_ID = os.environ.get("IOT_THING_ID")
+AWS_REGION = os.environ.get("AWS_REGION")
+
+# Ensure environment variables are set
+if not DYNAMODB_TABLE_NAME or not IOT_THING_ID or not AWS_REGION:
+    print("ERROR: Missing required environment variables (DEVICE_STATUS_TABLE_NAME, IOT_THING_ID, AWS_REGION).")
+    # In a production scenario, you might raise an exception or log to a dead-letter queue.
+    # For now, we'll let it proceed to raise an error during execution if not set,
+    # but this print statement helps with initial debugging.
+
+# Initialize DynamoDB client with explicit region
+dynamodb = boto3.resource('dynamodb', region_name=AWS_REGION)
+table = dynamodb.Table(DYNAMODB_TABLE_NAME)
 
 
 def handler(event, context):
     """
-    Lambda handler for processing IoT device status updates.
-    Expects the MQTT payload as the event.
+    AWS Lambda handler for processing IoT device status messages.
+    This function is triggered by an AWS IoT Rule.
     """
+    print(f"Received event: {json.dumps(event)}")
+
     try:
-        # The event is the MQTT payload from the IoT Rule
-        payload = event
+        # The IoT rule "SELECT * FROM 'petfeeder/status'" forwards the entire MQTT payload
+        # as the event body. It's usually a JSON string.
+        # Ensure the event structure matches what the IoT rule sends.
+        # For a simple SELECT *, the MQTT payload is directly the event body.
+        # If the payload is a string, parse it. If it's already an object, use it directly.
+        if isinstance(event, str):
+            payload = json.loads(event)
+        elif isinstance(event, dict):
+            payload = event
+        else:
+            raise ValueError("Unexpected event format. Expected string or dict.")
 
-        table_name = os.environ.get("DEVICE_STATUS_TABLE_NAME")
-        if not table_name:
-            print("Error: DEVICE_STATUS_TABLE_NAME environment variable not set.")
-            raise ValueError("DEVICE_STATUS_TABLE_NAME not configured.")
-
-        table = dynamodb.Table(table_name)
-
-        thing_id = os.environ.get("IOT_THING_ID")
-        if not thing_id:
-            print("Error: IOT_THING_ID environment variable not set.")
-            raise ValueError("IOT_THING_ID not configured.")
-
-        # Extract relevant status fields from the payload
-        # Ensure these keys match what your ESP32 publishes
         feeder_state = payload.get("feeder_state", "unknown")
         network_status = payload.get("network_status", "unknown")
         message = payload.get("message", "No message")
         trigger_method = payload.get("trigger_method", "unknown")
 
-        timestamp = datetime.utcnow().isoformat() + "Z"
+        current_timestamp = datetime.utcnow().isoformat() + "Z"  # ISO 8601 with Z for UTC
 
-        table.put_item(
-            Item={
-                'thingId': thing_id,
-                'status': feeder_state,
-                'network_status': network_status,
-                'message': message,
-                'trigger_method': trigger_method,
-                'lastUpdated': timestamp
-            }
-        )
-        print(f"Successfully updated status for {thing_id}: {feeder_state}")
+        # Prepare the item to be stored/updated in DynamoDB
+        # The 'thing_id' is the partition key for the DeviceStatus table.
+        item = {
+            'thing_id': IOT_THING_ID,
+            'feeder_state': feeder_state,
+            'network_status': network_status,
+            'message': message,
+            'trigger_method': trigger_method,
+            'last_updated': current_timestamp
+        }
+
+        # PutItem will create a new item or replace an existing item with the same primary key.
+        table.put_item(Item=item)
+
+        print(f"Successfully updated device status for {IOT_THING_ID}: {json.dumps(item)}")
         return {
             'statusCode': 200,
-            'body': json.dumps('Status updated successfully!')
+            'body': json.dumps('Device status updated successfully!')
         }
-    except Exception as e:
-        print(f"Error updating device status: {e}")
+
+    except json.JSONDecodeError as e:
+        print(f"Error decoding JSON payload: {e}")
+        return {
+            'statusCode': 400,
+            'body': json.dumps(f"Invalid JSON payload: {e}")
+        }
+    except ClientError as e:
+        print(f"DynamoDB Client Error: {e}")
         return {
             'statusCode': 500,
-            'body': json.dumps(f'Error: {str(e)}')
+            'body': json.dumps(f"DynamoDB error: {e}")
+        }
+    except ValueError as e:
+        print(f"Validation Error: {e}")
+        return {
+            'statusCode': 400,
+            'body': json.dumps(f"Payload validation error: {e}")
+        }
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        return {
+            'statusCode': 500,
+            'body': json.dumps(f"Internal server error: {e}")
         }

@@ -5,7 +5,7 @@ from app.services.feed_service import create_schedule
 router = APIRouter()
 
 
-@router.post("/", response_model=ScheduleResponse)
+@router.post("/schedule/", response_model=ScheduleResponse)
 async def schedule(request: ScheduleRequest):
     try:
         result = await create_schedule(request)

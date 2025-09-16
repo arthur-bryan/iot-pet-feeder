@@ -89,12 +89,13 @@ def save_schedule(request: ScheduleRequest) -> dict:
     table.put_item(Item=item)
     return item
 
+
 async def get_latest_device_status() -> Dict[str, Any]: # <<< NEW FUNCTION
     """
     Retrieves the latest device status from the DynamoDB table.
     Assumes 'thingId' is the partition key and we want the item for the configured IOT_THING_ID.
     """
-    from app.core.config import settings # Import here to avoid circular dependency
+    from app.core.config import settings
     loop = asyncio.get_event_loop()
     table = get_device_status_table()
     thing_id = settings.IOT_THING_ID
@@ -102,7 +103,7 @@ async def get_latest_device_status() -> Dict[str, Any]: # <<< NEW FUNCTION
     try:
         response = await loop.run_in_executor(
             None,
-            lambda: table.get_item(Key={'thingId': thing_id})
+            lambda: table.get_item(Key={'thing_id': thing_id})
         )
         return response.get('Item')
     except ClientError as e:

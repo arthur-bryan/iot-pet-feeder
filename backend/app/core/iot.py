@@ -11,9 +11,10 @@ import os
 # It will automatically pick up credentials from Lambda's execution role.
 iot_client = boto3.client(
     "iot-data",
-    region_name="sa-east-1",
+    region_name=settings.AWS_REGION,
     endpoint_url=f"https://{settings.IOT_ENDPOINT}"
 )
+
 
 async def publish_feed_command(command: str) -> bool:
     if not settings.IOT_ENDPOINT:

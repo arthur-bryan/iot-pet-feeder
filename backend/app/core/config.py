@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     AWS_REGION: str
     DYNAMO_FEED_HISTORY_TABLE: str
     DYNAMO_FEED_SCHEDULE_TABLE: str
-    DEVICE_STATUS_TABLE_NAME: str # <<< ADDED THIS
+    DEVICE_STATUS_TABLE_NAME: str
     IOT_ENDPOINT: str
     IOT_THING_ID: str
     IOT_TOPIC_FEED: str = "petfeeder/commands"

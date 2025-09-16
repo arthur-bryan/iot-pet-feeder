@@ -40,33 +40,28 @@ const handleGuestLogin = () => {
     }
     sessionStorage.setItem('guestUserName', guestName);
     sessionStorage.removeItem('authenticatedUserEmail'); // Clear any previous auth state
-    redirectTo('index.html');
+    window.location.href = 'index.html'; // Use direct assignment for compatibility
 };
 
 // --- Google Login Logic ---
 const handleGoogleLogin = async () => {
-    // In a real application, you would implement Google authentication here.
-    // For this example, we'll show a message.
-    showModal('Google Login', 'Google login is not implemented in this static file. Please use Guest Login.');
+    // If Google login is not implemented, show modal
+    showModal('Google Login', 'Google login is not implemented. Please use Guest Login.');
 };
 
 // --- Initial Load ---
 document.addEventListener('DOMContentLoaded', () => {
     const storedGuestName = sessionStorage.getItem('guestUserName');
     if (storedGuestName) {
-        redirectTo('index.html');
+        window.location.href = 'index.html';
         return;
     }
-    // We are simulating an authentication check.
-    // In a real app, this would be a call to a service like Amplify.
     const authenticatedUser = sessionStorage.getItem('authenticatedUserEmail');
     if (authenticatedUser) {
-        redirectTo('index.html');
-    } else {
-        guestNameInput.focus();
+        window.location.href = 'index.html';
+        return;
     }
-
-    // Event Listeners
+    guestNameInput.focus();
     guestLoginButton.addEventListener('click', handleGuestLogin);
     guestNameInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {

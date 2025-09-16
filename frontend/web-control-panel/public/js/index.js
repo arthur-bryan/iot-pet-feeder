@@ -22,6 +22,7 @@ const modalMessage = document.getElementById('modalMessage');
 const closeModalButton = document.getElementById('closeModalButton');
 
 const ITEMS_PER_PAGE = 10;
+const API_TIMEOUT = 5000; // 5-second timeout for API calls
 let currentPage = 1;
 let totalPages = 1;
 let currentUserName = 'Guest';
@@ -68,6 +69,22 @@ const formatTimestamp = isoString => {
     }
 };
 
+/**
+ * Wraps a fetch call with a timeout.
+ * @param {string} url The URL to fetch.
+ * @param {object} options Fetch options.
+ * @param {number} timeout The timeout in milliseconds.
+ * @returns {Promise<Response>} The fetch response.
+ */
+const fetchWithTimeout = (url, options = {}, timeout = API_TIMEOUT) => {
+    return Promise.race([
+        fetch(url, options),
+        new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('API request timed out')), timeout)
+        )
+    ]);
+};
+
 // --- API and Data Functions ---
 const fetchFeedHistory = async (page = 1) => {
     currentPage = page;
@@ -80,8 +97,7 @@ const fetchFeedHistory = async (page = 1) => {
 
     try {
         const url = `${API_BASE_URL}${API_V1_PATH}/feed_history/?page=${currentPage}&limit=${limit}`;
-        // Removed custom headers
-        const response = await fetch(url);
+        const response = await fetchWithTimeout(url);
         if (!response.ok) {
             if (response.status === 404) {
                 throw new Error("Feeder history not found. The API may not be deployed or the path is incorrect.");
@@ -94,7 +110,7 @@ const fetchFeedHistory = async (page = 1) => {
 
         // Clear previous entries
         eventsContainer.innerHTML = '';
-        if (data.events && data.events.length > 0) {
+        if (data.events && Array.isArray(data.events) && data.events.length > 0) {
             data.events.forEach(event => {
                 const row = document.createElement('tr');
                 row.className = "hover:bg-gray-100";
@@ -126,8 +142,7 @@ const fetchFeedHistory = async (page = 1) => {
 const updateDeviceStatus = async () => {
     try {
         const url = `${API_BASE_URL}/status/`;
-        // Removed custom headers
-        const response = await fetch(url);
+        const response = await fetchWithTimeout(url);
         if (!response.ok) {
             if (response.status === 404) {
                 statusMessageElement.textContent = "Feeder not found. Please check your setup.";
@@ -152,8 +167,7 @@ const sendFeedCommand = async () => {
     feedButtonText.textContent = 'Dispensing...';
     try {
         const url = `${API_BASE_URL}${API_V1_PATH}/feed/`;
-        // Removed custom headers
-        const response = await fetch(url, {
+        const response = await fetchWithTimeout(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

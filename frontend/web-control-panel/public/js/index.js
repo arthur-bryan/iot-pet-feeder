@@ -87,113 +87,115 @@ const fetchWithTimeout = (url, options = {}, timeout = API_TIMEOUT) => {
 
 // --- API and Data Functions ---
 const fetchFeedHistory = async (page = 1) => {
-    currentPage = page;
-    eventsContainer.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-gray-500">Loading history...</td></tr>';
+    eventsContainer.innerHTML = `<tr><td colspan="4" class="px-4 py-4 text-center text-gray-500" id="loadingEvents">Loading feeding history...</td></tr>`;
+    pageInfo.textContent = `Loading...`;
     prevPageButton.disabled = true;
     nextPageButton.disabled = true;
-
-    const limit = ITEMS_PER_PAGE;
-    const offset = (currentPage - 1) * ITEMS_PER_PAGE;
-
     try {
-        const url = `${API_BASE_URL}${API_V1_PATH}/feed_history/?page=${currentPage}&limit=${limit}`;
-        const response = await fetchWithTimeout(url);
+        const response = await fetch(`${API_BASE_URL}/api/v1/feed_history/?page=${page}&limit=${ITEMS_PER_PAGE}`);
         if (!response.ok) {
-            if (response.status === 404) {
-                throw new Error("Feeder history not found. The API may not be deployed or the path is incorrect.");
-            } else if (response.status === 401) {
-                throw new Error("Unauthorized. Please log in again.");
-            }
-            throw new Error(`Error fetching history: ${response.status} ${response.statusText}`);
+            const errorText = await response.text();
+            throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
         }
         const data = await response.json();
-
-        // Clear previous entries
         eventsContainer.innerHTML = '';
-        if (data.events && Array.isArray(data.events) && data.events.length > 0) {
-            data.events.forEach(event => {
+        // Support both 'items' and 'events' for compatibility
+        const events = data.items || data.events || [];
+        if (events.length > 0) {
+            events.forEach(event => {
                 const row = document.createElement('tr');
-                row.className = "hover:bg-gray-100";
+                row.className = 'history-item';
                 row.innerHTML = `
-                    <td class="py-3 px-5 text-sm text-gray-700">${formatTimestamp(event.timestamp)}</td>
-                    <td class="py-3 px-5 text-sm font-medium text-gray-900">${event.trigger_method}</td>
-                    <td class="py-3 px-5 text-sm text-gray-500">${event.status || 'Success'}</td>
+                    <td data-label="Timestamp">${formatTimestamp(event.timestamp)}</td>
+                    <td data-label="Trigger">${event.requested_by || event.trigger_method || 'N/A'}</td>
+                    <td data-label="Mode">${event.mode || 'N/A'}</td>
+                    <td data-label="Status" class="${getStatusClass(event.status)}">${event.status ? event.status.toUpperCase() : 'N/A'}</td>
                 `;
                 eventsContainer.appendChild(row);
             });
+            totalPages = data.total_pages || Math.ceil((data.total_count || events.length) / ITEMS_PER_PAGE) || 1;
+            currentPage = data.page || page;
+            pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+            prevPageButton.disabled = currentPage === 1;
+            nextPageButton.disabled = currentPage === totalPages || totalPages === 0;
         } else {
-            eventsContainer.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-gray-500">No feeding events recorded.</td></tr>';
+            eventsContainer.innerHTML = `<tr><td colspan="4" class="px-4 py-4 text-center text-gray-500">No feeding events found.</td></tr>`;
+            pageInfo.textContent = 'Page 0 of 0';
         }
-
-        // Update pagination
-        const totalItems = data.total_count || 0;
-        totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE) || 1;
-        pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
-        prevPageButton.disabled = currentPage <= 1;
-        nextPageButton.disabled = currentPage >= totalPages;
-
     } catch (error) {
-        console.error('Failed to fetch feeding history:', error);
-        eventsContainer.innerHTML = `<tr><td colspan="3" class="text-center py-4 text-red-500">Error: ${error.message}</td></tr>`;
-        showModal('API Error', `Failed to load feeding history: ${error.message}`);
+        console.error("Error fetching feed history:", error);
+        eventsContainer.innerHTML = `<tr><td colspan="4" class="px-4 py-4 text-center text-red-600">Error loading history: ${error.message}</td></tr>`;
+        pageInfo.textContent = 'Error';
     }
 };
 
 const updateDeviceStatus = async () => {
     try {
-        const url = `${API_BASE_URL}/status/`;
-        const response = await fetchWithTimeout(url);
+        const response = await fetch(`${API_BASE_URL}/status/`);
         if (!response.ok) {
-            if (response.status === 404) {
-                statusMessageElement.textContent = "Feeder not found. Please check your setup.";
-                setStatusDisplay('red', 'Error');
-                return;
-            }
-            throw new Error(`Error fetching status: ${response.status} ${response.statusText}`);
+            const errorText = await response.text();
+            throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
         }
         const data = await response.json();
-        statusMessageElement.textContent = `Status: ${data.feeder_state} | Network: ${data.network_status}`;
-        setStatusDisplay('green', 'Online');
-
+        deviceStatusElement.textContent = (data.feeder_state || data.status || 'Unknown').toUpperCase();
+        statusMessageElement.textContent = `Last updated: ${formatTimestamp(data.last_updated || data.timestamp || new Date().toISOString())}`;
     } catch (error) {
-        console.error('Failed to fetch device status:', error);
-        statusMessageElement.textContent = "Could not connect to device.";
-        setStatusDisplay('red', 'Offline');
+        console.error("Error fetching device status:", error);
+        deviceStatusElement.textContent = "Error";
+        statusMessageElement.textContent = `Could not fetch device status: ${error.message}`;
     }
 };
 
-const sendFeedCommand = async () => {
+async function sendFeedCommand() {
+    const currentFeederStatus = deviceStatusElement.textContent.toUpperCase();
+    if (currentFeederStatus === 'OPENING' || currentFeederStatus === 'OPEN' || currentFeederStatus === 'CLOSING') {
+        showModal('Feeder Busy', 'The feeder is currently busy. Please wait a moment before sending another command.');
+        return;
+    }
     feedButton.disabled = true;
-    feedButtonText.textContent = 'Dispensing...';
+    feedMessage.textContent = "Sending feed command...";
+    feedMessage.className = "text-sm text-gray-600 mt-3";
     try {
-        const url = `${API_BASE_URL}${API_V1_PATH}/feed/`;
-        const response = await fetchWithTimeout(url, {
+        const response = await fetch(`${API_BASE_URL}/api/v1/feed/`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({ "requested_by": currentUserName, "mode": "manual" })
         });
-
         if (!response.ok) {
-            if (response.status === 404) {
-                throw new Error("API endpoint not found. The API may not be deployed or the path is incorrect.");
-            } else if (response.status === 401) {
-                throw new Error("Unauthorized. Please log in again.");
-            }
-            throw new Error(`HTTP error! Status: ${response.status}`);
+            const errorText = await response.text();
+            throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
         }
-
-        showModal('Command Sent', 'Feeding command sent successfully! The feeder will dispense food shortly.');
+        const data = await response.json();
+        feedMessage.textContent = `Command sent! Status: ${(data.status || data.result || 'OK').toUpperCase()}`;
+        feedMessage.className = "text-sm text-green-600 mt-3 font-semibold";
+        setTimeout(() => {
+            fetchFeedHistory(1);
+        }, 1500);
+        let pollCount = 0;
+        const maxPolls = 5;
+        const pollIntervalMs = 1000;
+        if (statusPollingInterval) {
+            clearInterval(statusPollingInterval);
+        }
+        statusPollingInterval = setInterval(() => {
+            if (pollCount < maxPolls) {
+                updateDeviceStatus();
+                pollCount++;
+            } else {
+                clearInterval(statusPollingInterval);
+                statusPollingInterval = null;
+            }
+        }, pollIntervalMs);
     } catch (error) {
-        console.error('Failed to send feed command:', error);
-        showModal('Error', `Failed to send feed command: ${error.message}`);
+        console.error("Error sending feed command:", error);
+        feedMessage.textContent = `Failed to send command: ${error.message}`;
+        feedMessage.className = "text-sm text-red-600 mt-3 font-semibold";
     } finally {
         feedButton.disabled = false;
-        feedButtonText.textContent = 'FEED NOW';
-        setTimeout(updateDeviceStatus, 2000); // Check status after a short delay
     }
-};
+}
 
 // --- Event Handlers ---
 const handleLogout = () => {

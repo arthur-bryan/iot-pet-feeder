@@ -147,12 +147,18 @@ const updateDeviceStatus = async () => {
 };
 
 async function sendFeedCommand() {
+    // Defensive: check if button is disabled
+    if (feedButton.disabled) return;
+    // Check if feeder is busy before sending command
     const currentFeederStatus = deviceStatusElement.textContent.toUpperCase();
     if (currentFeederStatus === 'OPENING' || currentFeederStatus === 'OPEN' || currentFeederStatus === 'CLOSING') {
         showModal('Feeder Busy', 'The feeder is currently busy. Please wait a moment before sending another command.');
         return;
     }
     feedButton.disabled = true;
+    if (typeof feedButtonText !== 'undefined' && feedButtonText) {
+        feedButtonText.textContent = "Dispensing...";
+    }
     feedMessage.textContent = "Sending feed command...";
     feedMessage.className = "text-sm text-gray-600 mt-3";
     try {
@@ -165,11 +171,13 @@ async function sendFeedCommand() {
         });
         if (!response.ok) {
             const errorText = await response.text();
+            showModal('Feed Error', `HTTP error! status: ${response.status} - ${errorText}`);
             throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
         }
         const data = await response.json();
         feedMessage.textContent = `Command sent! Status: ${(data.status || data.result || 'OK').toUpperCase()}`;
         feedMessage.className = "text-sm text-green-600 mt-3 font-semibold";
+        showModal('Feed Command Sent', `Status: ${(data.status || data.result || 'OK').toUpperCase()}`);
         setTimeout(() => {
             fetchFeedHistory(1);
         }, 1500);
@@ -192,8 +200,12 @@ async function sendFeedCommand() {
         console.error("Error sending feed command:", error);
         feedMessage.textContent = `Failed to send command: ${error.message}`;
         feedMessage.className = "text-sm text-red-600 mt-3 font-semibold";
+        showModal('Feed Error', `Failed to send command: ${error.message}`);
     } finally {
         feedButton.disabled = false;
+        if (typeof feedButtonText !== 'undefined' && feedButtonText) {
+            feedButtonText.textContent = "FEED NOW";
+        }
     }
 }
 

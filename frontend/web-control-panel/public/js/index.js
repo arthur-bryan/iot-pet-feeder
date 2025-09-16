@@ -1,5 +1,6 @@
 // Read API base URL from environment
 const API_BASE_URL = window.ENV.VITE_API_BASE_URL;
+const API_V1_PATH = '/api/v1';
 
 // --- DOM Elements ---
 const feedButton = document.getElementById('feedButton');
@@ -78,7 +79,7 @@ const fetchFeedHistory = async (page = 1) => {
     const offset = (currentPage - 1) * ITEMS_PER_PAGE;
 
     try {
-        const url = `${API_BASE_URL}/history?limit=${limit}&offset=${offset}`;
+        const url = `${API_BASE_URL}${API_V1_PATH}/feed_history/?page=${currentPage}&limit=${limit}`;
         const response = await fetch(url, { headers: { 'X-User-Name': currentUserName } });
         if (!response.ok) {
             if (response.status === 404) {
@@ -123,7 +124,7 @@ const fetchFeedHistory = async (page = 1) => {
 
 const updateDeviceStatus = async () => {
     try {
-        const url = `${API_BASE_URL}/status`;
+        const url = `${API_BASE_URL}/status/`;
         const response = await fetch(url, { headers: { 'X-User-Name': currentUserName } });
         if (!response.ok) {
             if (response.status === 404) {
@@ -148,14 +149,14 @@ const sendFeedCommand = async () => {
     feedButton.disabled = true;
     feedButtonText.textContent = 'Dispensing...';
     try {
-        const url = `${API_BASE_URL}/commands`;
+        const url = `${API_BASE_URL}${API_V1_PATH}/feed/`;
         const response = await fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-User-Name': currentUserName
             },
-            body: JSON.stringify({ command: 'FEED_NOW' })
+            body: JSON.stringify({ "requested_by": currentUserName, "mode": "manual" })
         });
 
         if (!response.ok) {

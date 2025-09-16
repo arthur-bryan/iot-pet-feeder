@@ -1,5 +1,5 @@
 // Read API base URL from environment
-const API_BASE_URL = window.ENV.VITE_API_BASE_URL;
+const API_BASE_URL = window.ENV?.VITE_API_BASE_URL;
 const API_V1_PATH = '/api/v1';
 
 // --- DOM Elements ---
@@ -80,7 +80,8 @@ const fetchFeedHistory = async (page = 1) => {
 
     try {
         const url = `${API_BASE_URL}${API_V1_PATH}/feed_history/?page=${currentPage}&limit=${limit}`;
-        const response = await fetch(url, { headers: { 'X-User-Name': currentUserName } });
+        // Removed custom headers
+        const response = await fetch(url);
         if (!response.ok) {
             if (response.status === 404) {
                 throw new Error("Feeder history not found. The API may not be deployed or the path is incorrect.");
@@ -125,7 +126,8 @@ const fetchFeedHistory = async (page = 1) => {
 const updateDeviceStatus = async () => {
     try {
         const url = `${API_BASE_URL}/status/`;
-        const response = await fetch(url, { headers: { 'X-User-Name': currentUserName } });
+        // Removed custom headers
+        const response = await fetch(url);
         if (!response.ok) {
             if (response.status === 404) {
                 statusMessageElement.textContent = "Feeder not found. Please check your setup.";
@@ -150,11 +152,11 @@ const sendFeedCommand = async () => {
     feedButtonText.textContent = 'Dispensing...';
     try {
         const url = `${API_BASE_URL}${API_V1_PATH}/feed/`;
+        // Removed custom headers
         const response = await fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-User-Name': currentUserName
             },
             body: JSON.stringify({ "requested_by": currentUserName, "mode": "manual" })
         });
@@ -188,19 +190,15 @@ const handleLogout = () => {
 
 // --- Initial Load and App Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
-    let userLoggedIn = false;
     const storedGuestName = sessionStorage.getItem('guestUserName');
     const authenticatedUserEmail = sessionStorage.getItem('authenticatedUserEmail');
 
     if (storedGuestName) {
         currentUserName = storedGuestName;
-        userLoggedIn = true;
     } else if (authenticatedUserEmail) {
         currentUserName = authenticatedUserEmail;
-        userLoggedIn = true;
-    }
-
-    if (!userLoggedIn) {
+    } else {
+        // No valid session found, redirect to login page
         window.location.href = 'login.html';
         return;
     }
@@ -210,6 +208,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial data load and polling
     fetchFeedHistory(1);
     updateDeviceStatus();
+    if (statusPollingInterval) {
+        clearInterval(statusPollingInterval);
+    }
     statusPollingInterval = setInterval(updateDeviceStatus, 5000);
 
     // Pagination Event Listeners

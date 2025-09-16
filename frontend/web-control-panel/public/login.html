@@ -10,79 +10,65 @@
     <meta property="og:title" content="Smart Pet Feeder Login">
     <meta property="og:description" content="Login to control and monitor your smart pet feeder.">
     <meta property="og:type" content="website">
-    <meta property="og:image" content="/favicon.ico">
+
     <!-- Google Fonts: Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
     <!-- Link to external custom CSS -->
-    <link rel="stylesheet" href="css/style.css">
-    <!-- Optional favicon -->
-    <link rel="icon" href="favicon.ico" />
+    <link rel="stylesheet" href="style.css">
+
     <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com" defer></script>
-    <!-- API config (must be loaded before main JS) -->
-    <script src="env-config.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="font-inter antialiased bg-gradient-to-br from-blue-100 to-indigo-200 min-h-screen flex items-center justify-center p-4 sm:p-6">
 
-<noscript>
-    <div class="bg-red-100 text-red-700 text-center p-4 rounded mb-4" role="alert">
-        This app requires JavaScript to function properly. Please enable it in your browser settings.
+    <!-- Login Page View -->
+    <div id="loginView" class="main-container flex flex-col items-center justify-center space-y-8 p-8 transition-all duration-500 ease-in-out">
+        <div class="text-center">
+            <h1 class="text-4xl sm:text-5xl font-extrabold text-gray-900 leading-tight">Smart Pet Feeder</h1>
+            <p class="mt-2 text-lg text-gray-600">Securely login to manage your pet's feeding schedule.</p>
+        </div>
+
+        <div class="w-full max-w-sm space-y-4">
+            <!-- Guest Login Section -->
+            <div class="bg-gray-50 p-6 rounded-xl shadow-md space-y-4">
+                <h2 class="text-2xl font-bold text-gray-800">Guest Access</h2>
+                <p class="text-sm text-gray-500">Enter a name to access the app as a guest.</p>
+                <input id="guestNameInput" type="text" placeholder="Enter your name" class="w-full text-base py-3 px-5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200" aria-label="Guest Name">
+                <button id="guestLoginButton" aria-label="Sign in as a guest" class="w-full text-lg py-3 px-6 bg-indigo-600 text-white font-bold rounded-xl shadow-lg transition-all duration-300 ease-in-out hover:bg-indigo-700 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                    Sign in as Guest
+                </button>
+            </div>
+
+            <!-- Separator -->
+            <div class="flex items-center">
+                <div class="flex-grow border-t border-gray-300"></div>
+                <span class="flex-shrink mx-4 text-gray-500 font-medium">or</span>
+                <div class="flex-grow border-t border-gray-300"></div>
+            </div>
+
+            <!-- Google Login Section -->
+            <button id="googleLoginButton" aria-label="Sign in with Google" class="w-full text-lg py-3 px-6 bg-white border border-gray-300 text-gray-800 font-bold rounded-xl shadow-lg transition-all duration-300 ease-in-out hover:bg-gray-100 hover:shadow-xl flex items-center justify-center">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google Logo" class="w-5 h-5 mr-2" />
+                Sign in with Google
+            </button>
+        </div>
+        <p class="text-xs text-gray-400 mt-6">Smart Pet Feeder UI v1.0.0</p>
     </div>
-</noscript>
 
-<!-- Enhanced Login Page Content -->
-<div id="loginPage" class="main-container bg-white rounded-2xl shadow-xl p-6 sm:p-8 w-full max-w-md text-center flex flex-col items-center">
-    <!-- Logo -->
-    <img src="/favicon.ico" alt="Smart Pet Feeder Logo" class="w-16 h-16 mx-auto mb-4 drop-shadow-lg animate-bounce" />
-    <h1 class="text-4xl sm:text-5xl font-extrabold text-indigo-700 mb-2 leading-tight">Smart Pet Feeder</h1>
-    <p class="text-lg text-gray-600 mb-6">Login or continue as guest to access your control panel.</p>
-
-    <!-- Guest Access -->
-    <div class="card bg-gradient-to-r from-indigo-50 to-blue-50 p-6 rounded-xl shadow-inner mb-6 w-full">
-        <h2 class="text-2xl sm:text-3xl font-bold text-indigo-800 mb-2">Guest Access</h2>
-        <p class="text-gray-700 mb-4">Enter your name to proceed as a guest.</p>
-        <input type="text" id="guestNameInput" placeholder="Your Name" class="w-full p-3 mb-4 border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-800 text-lg transition-all duration-200" aria-label="Guest Name">
-        <button id="guestLoginButton" aria-label="Continue as Guest" class="w-full text-lg py-3 px-6 bg-indigo-600 text-white font-bold rounded-xl shadow-lg transition-all duration-300 ease-in-out hover:bg-indigo-700 hover:shadow-xl hover:-translate-y-0.5 active:bg-indigo-800 active:shadow-inner active:translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 -mt-0.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
-            </svg>
-            Continue as Guest
-        </button>
+    <!-- Message Modal -->
+    <div id="messageModal" role="dialog" aria-modal="true" class="fixed inset-0 bg-gray-600 bg-opacity-75 hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-lg shadow-xl p-6 sm:p-8 max-w-sm w-full text-center">
+            <h3 id="modalTitle" class="text-2xl font-bold text-gray-900 mb-4"></h3>
+            <p id="modalMessage" class="text-gray-700 mb-6"></p>
+            <button id="closeModalButton" aria-label="Close Modal" class="w-full py-2 px-4 bg-indigo-600 text-white font-medium rounded-lg transition-all duration-300 ease-in-out hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                OK
+            </button>
+        </div>
     </div>
 
-    <!-- Divider -->
-    <div class="flex items-center w-full my-4">
-        <hr class="flex-grow border-t border-gray-300" />
-        <span class="mx-4 text-gray-400 font-semibold">OR</span>
-        <hr class="flex-grow border-t border-gray-300" />
-    </div>
-
-    <!-- Google Login -->
-    <div class="card bg-white p-6 rounded-xl shadow-inner w-full">
-        <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">Google Login</h2>
-        <p class="text-gray-700 mb-4">Sign in securely with your Google account.</p>
-        <button id="googleLoginButton" aria-label="Sign in with Google" class="w-full text-lg py-3 px-6 bg-white border border-gray-300 text-gray-800 font-bold rounded-xl shadow-lg transition-all duration-300 ease-in-out hover:bg-gray-100 hover:shadow-xl flex items-center justify-center">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google Logo" class="w-5 h-5 mr-2" />
-            Sign in with Google
-        </button>
-    </div>
-    <p class="text-xs text-gray-400 mt-6">Smart Pet Feeder UI v1.0.0</p>
-</div>
-
-<!-- Modal -->
-<div id="messageModal" role="dialog" aria-modal="true" class="fixed inset-0 bg-gray-600 bg-opacity-75 hidden flex items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-lg shadow-xl p-6 sm:p-8 max-w-sm w-full text-center">
-        <h3 id="modalTitle" class="text-2xl font-bold text-gray-900 mb-4"></h3>
-        <p id="modalMessage" class="text-gray-700 mb-6"></p>
-        <button id="closeModalButton" aria-label="Close Modal" class="w-full py-2 px-4 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75">
-            OK
-        </button>
-    </div>
-</div>
-
-<!-- Scripts -->
-<script src="public/env-config.js" defer></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/aws-amplify/3.3.9-sdk-bump.15/aws-amplify.min.js" defer></script>
-<script src="js/login.js" defer></script>
+    <!-- Scripts -->
+    <script src="env-config.js"></script>
+    <script src="login.js"></script>
 </body>
 </html>

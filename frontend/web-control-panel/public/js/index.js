@@ -197,6 +197,16 @@ async function sendFeedCommand() {
     }
 }
 
+function getStatusClass(status) {
+    switch (status?.toLowerCase()) {
+        case 'queued': return 'status-queued';
+        case 'sent': return 'status-sent';
+        case 'completed': return 'status-completed';
+        case 'failed': return 'status-failed';
+        default: return '';
+    }
+}
+
 // --- Event Handlers ---
 const handleLogout = () => {
     sessionStorage.removeItem('guestUserName');

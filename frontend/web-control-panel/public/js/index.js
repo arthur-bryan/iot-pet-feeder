@@ -146,13 +146,19 @@ const updateDeviceStatus = async () => {
     }
 };
 
-async function sendFeedCommand() {
+async function sendFeedCommand(event) {
+    console.log('Feed Now button clicked');
+    if (event) event.preventDefault(); // Prevent form submit if inside a form
     // Defensive: check if button is disabled
-    if (feedButton.disabled) return;
+    if (feedButton.disabled) {
+        console.log('Feed button is disabled, aborting.');
+        return;
+    }
     // Check if feeder is busy before sending command
     const currentFeederStatus = deviceStatusElement.textContent.toUpperCase();
     if (currentFeederStatus === 'OPENING' || currentFeederStatus === 'OPEN' || currentFeederStatus === 'CLOSING') {
         showModal('Feeder Busy', 'The feeder is currently busy. Please wait a moment before sending another command.');
+        console.log('Feeder busy, aborting.');
         return;
     }
     feedButton.disabled = true;
@@ -162,6 +168,7 @@ async function sendFeedCommand() {
     feedMessage.textContent = "Sending feed command...";
     feedMessage.className = "text-sm text-gray-600 mt-3";
     try {
+        console.log('Sending fetch to /api/v1/feed/');
         const response = await fetch(`${API_BASE_URL}/api/v1/feed/`, {
             method: 'POST',
             headers: {

@@ -277,7 +277,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     Amplify.configure(amplifyConfig);
     console.log("Amplify configured from index.js DOMContentLoaded.");
 
-    logoutButton.addEventListener('click', handleLogout); // Attach logout listener here
+    logoutButton.addEventListener('click', () => {
+        sessionStorage.removeItem('guestUserName');
+        sessionStorage.removeItem('authenticatedUserEmail');
+        window.location.href = 'login.html';
+    }); // Attach logout listener here
 
     let userLoggedIn = false;
 

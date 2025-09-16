@@ -1,10 +1,11 @@
-// Read API base URL from environment
-const API_BASE_URL = window.ENV?.VITE_API_BASE_URL;
-const API_V1_PATH = '/api/v1';
+// public/js/index.js
 
-// --- DOM Elements ---
+// API_BASE_URL will now be read from window.ENV
+const API_BASE_URL = window.ENV?.VITE_API_BASE_URL;
+
+// --- Main App Elements ---
 const feedButton = document.getElementById('feedButton');
-const feedButtonText = document.getElementById('feedButtonText');
+const feedMessage = document.getElementById('feedMessage');
 const eventsContainer = document.getElementById('eventsContainer');
 const prevPageButton = document.getElementById('prevPageButton');
 const nextPageButton = document.getElementById('nextPageButton');
@@ -15,209 +16,38 @@ const refreshButton = document.getElementById('refreshButton');
 const userNameDisplay = document.getElementById('userNameDisplay');
 const logoutButton = document.getElementById('logoutButton');
 
-// Modal Elements
+// --- Modal Elements ---
 const messageModal = document.getElementById('messageModal');
 const modalTitle = document.getElementById('modalTitle');
 const modalMessage = document.getElementById('modalMessage');
 const closeModalButton = document.getElementById('closeModalButton');
 
 const ITEMS_PER_PAGE = 10;
-const API_TIMEOUT = 5000; // 5-second timeout for API calls
 let currentPage = 1;
 let totalPages = 1;
-let currentUserName = 'Guest';
+let currentUserName = "Guest";
+
 let statusPollingInterval = null;
 
-// --- Modal Helpers ---
-const showModal = (title, message) => {
-    modalTitle.textContent = title;
-    modalMessage.textContent = message;
-    messageModal.classList.remove('hidden');
-    closeModalButton.focus();
-};
-
-const hideModal = () => {
-    modalTitle.textContent = "";
-    modalMessage.textContent = "";
-    messageModal.classList.add('hidden');
-};
-
-// Modal accessibility: close on Esc key
-window.addEventListener('keydown', e => {
-    if (!messageModal.classList.contains('hidden') && e.key === 'Escape') {
-        hideModal();
-    }
-});
-closeModalButton.addEventListener('click', hideModal);
-
 // --- Helper Functions ---
-const setStatusDisplay = (color, text) => {
-    deviceStatusElement.querySelector('div').className = `w-3 h-3 rounded-full bg-${color}-500`;
-    deviceStatusElement.querySelector('span').textContent = text;
-};
 
-const formatTimestamp = isoString => {
+function formatTimestamp(isoString) {
     try {
         const date = new Date(isoString);
-        return date.toLocaleString(undefined, {
+        const options = {
             year: 'numeric', month: 'short', day: 'numeric',
-            hour: '2-digit', minute: '2-digit', second: '2-digit'
-        });
+            hour: '2-digit', minute: '2-digit', second: '2-digit',
+            hour12: false
+        };
+        return date.toLocaleString(undefined, options);
     } catch (e) {
-        console.error("Invalid date string:", isoString);
+        console.error("Error formatting timestamp:", isoString, e);
         return isoString;
-    }
-};
-
-/**
- * Wraps a fetch call with a timeout.
- * @param {string} url The URL to fetch.
- * @param {object} options Fetch options.
- * @param {number} timeout The timeout in milliseconds.
- * @returns {Promise<Response>} The fetch response.
- */
-const fetchWithTimeout = (url, options = {}, timeout = API_TIMEOUT) => {
-    return Promise.race([
-        fetch(url, options),
-        new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('API request timed out')), timeout)
-        )
-    ]);
-};
-
-// --- API and Data Functions ---
-const fetchFeedHistory = async (page = 1) => {
-    eventsContainer.innerHTML = `<tr><td colspan="4" class="px-4 py-4 text-center text-gray-500" id="loadingEvents">Loading feeding history...</td></tr>`;
-    pageInfo.textContent = `Loading...`;
-    prevPageButton.disabled = true;
-    nextPageButton.disabled = true;
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/feed_history/?page=${page}&limit=${ITEMS_PER_PAGE}`);
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
-        }
-        const data = await response.json();
-        eventsContainer.innerHTML = '';
-        // Support both 'items' and 'events' for compatibility
-        const events = data.items || data.events || [];
-        if (events.length > 0) {
-            events.forEach(event => {
-                const row = document.createElement('tr');
-                row.className = 'history-item';
-                row.innerHTML = `
-                    <td data-label="Timestamp">${formatTimestamp(event.timestamp)}</td>
-                    <td data-label="Trigger">${event.requested_by || event.trigger_method || 'N/A'}</td>
-                    <td data-label="Mode">${event.mode || 'N/A'}</td>
-                    <td data-label="Status" class="${getStatusClass(event.status)}">${event.status ? event.status.toUpperCase() : 'N/A'}</td>
-                `;
-                eventsContainer.appendChild(row);
-            });
-            totalPages = data.total_pages || Math.ceil((data.total_count || events.length) / ITEMS_PER_PAGE) || 1;
-            currentPage = data.page || page;
-            pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
-            prevPageButton.disabled = currentPage === 1;
-            nextPageButton.disabled = currentPage === totalPages || totalPages === 0;
-        } else {
-            eventsContainer.innerHTML = `<tr><td colspan="4" class="px-4 py-4 text-center text-gray-500">No feeding events found.</td></tr>`;
-            pageInfo.textContent = 'Page 0 of 0';
-        }
-    } catch (error) {
-        console.error("Error fetching feed history:", error);
-        eventsContainer.innerHTML = `<tr><td colspan="4" class="px-4 py-4 text-center text-red-600">Error loading history: ${error.message}</td></tr>`;
-        pageInfo.textContent = 'Error';
-    }
-};
-
-const updateDeviceStatus = async () => {
-    try {
-        const response = await fetch(`${API_BASE_URL}/status/`);
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
-        }
-        const data = await response.json();
-        deviceStatusElement.textContent = (data.feeder_state || data.status || 'Unknown').toUpperCase();
-        statusMessageElement.textContent = `Last updated: ${formatTimestamp(data.last_updated || data.timestamp || new Date().toISOString())}`;
-    } catch (error) {
-        console.error("Error fetching device status:", error);
-        deviceStatusElement.textContent = "Error";
-        statusMessageElement.textContent = `Could not fetch device status: ${error.message}`;
-    }
-};
-
-async function sendFeedCommand(event) {
-    console.log('Feed Now button clicked');
-    if (event) event.preventDefault(); // Prevent form submit if inside a form
-    // Defensive: check if button is disabled
-    if (feedButton.disabled) {
-        console.log('Feed button is disabled, aborting.');
-        return;
-    }
-    // Check if feeder is busy before sending command
-    const currentFeederStatus = deviceStatusElement.textContent.toUpperCase();
-    if (currentFeederStatus === 'OPENING' || currentFeederStatus === 'OPEN' || currentFeederStatus === 'CLOSING') {
-        showModal('Feeder Busy', 'The feeder is currently busy. Please wait a moment before sending another command.');
-        console.log('Feeder busy, aborting.');
-        return;
-    }
-    feedButton.disabled = true;
-    if (typeof feedButtonText !== 'undefined' && feedButtonText) {
-        feedButtonText.textContent = "Dispensing...";
-    }
-    feedMessage.textContent = "Sending feed command...";
-    feedMessage.className = "text-sm text-gray-600 mt-3";
-    try {
-        console.log('Sending fetch to /api/v1/feed/');
-        const response = await fetch(`${API_BASE_URL}/api/v1/feed/`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ "requested_by": currentUserName, "mode": "manual" })
-        });
-        if (!response.ok) {
-            const errorText = await response.text();
-            showModal('Feed Error', `HTTP error! status: ${response.status} - ${errorText}`);
-            throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
-        }
-        const data = await response.json();
-        feedMessage.textContent = `Command sent! Status: ${(data.status || data.result || 'OK').toUpperCase()}`;
-        feedMessage.className = "text-sm text-green-600 mt-3 font-semibold";
-        showModal('Feed Command Sent', `Status: ${(data.status || data.result || 'OK').toUpperCase()}`);
-        setTimeout(() => {
-            fetchFeedHistory(1);
-        }, 1500);
-        let pollCount = 0;
-        const maxPolls = 5;
-        const pollIntervalMs = 1000;
-        if (statusPollingInterval) {
-            clearInterval(statusPollingInterval);
-        }
-        statusPollingInterval = setInterval(() => {
-            if (pollCount < maxPolls) {
-                updateDeviceStatus();
-                pollCount++;
-            } else {
-                clearInterval(statusPollingInterval);
-                statusPollingInterval = null;
-            }
-        }, pollIntervalMs);
-    } catch (error) {
-        console.error("Error sending feed command:", error);
-        feedMessage.textContent = `Failed to send command: ${error.message}`;
-        feedMessage.className = "text-sm text-red-600 mt-3 font-semibold";
-        showModal('Feed Error', `Failed to send command: ${error.message}`);
-    } finally {
-        feedButton.disabled = false;
-        if (typeof feedButtonText !== 'undefined' && feedButtonText) {
-            feedButtonText.textContent = "FEED NOW";
-        }
     }
 }
 
 function getStatusClass(status) {
-    switch (status?.toLowerCase()) {
+    switch (status.toLowerCase()) {
         case 'queued': return 'status-queued';
         case 'sent': return 'status-sent';
         case 'completed': return 'status-completed';
@@ -226,44 +56,269 @@ function getStatusClass(status) {
     }
 }
 
-// --- Event Handlers ---
-const handleLogout = () => {
-    sessionStorage.removeItem('guestUserName');
-    sessionStorage.removeItem('authenticatedUserEmail');
-    window.location.href = 'login.html';
-};
+/**
+ * Shows a custom modal with a given title and message.
+ * @param {string} title The title of the modal.
+ * @param {string} message The message content of the modal.
+ */
+function showModal(title, message) {
+    modalTitle.textContent = title;
+    modalMessage.textContent = message;
+    messageModal.classList.remove('hidden');
+}
 
-// --- Initial Load and App Initialization ---
-document.addEventListener('DOMContentLoaded', () => {
-    const storedGuestName = sessionStorage.getItem('guestUserName');
-    const authenticatedUserEmail = sessionStorage.getItem('authenticatedUserEmail');
+/**
+ * Hides the custom modal.
+ */
+function hideModal() {
+    messageModal.classList.add('hidden');
+}
 
-    if (storedGuestName) {
-        currentUserName = storedGuestName;
-    } else if (authenticatedUserEmail) {
-        currentUserName = authenticatedUserEmail;
-    } else {
-        // No valid session found, redirect to login page
+// --- API Calls ---
+
+// Function to send feed command
+async function sendFeedCommand() {
+    // Check if feeder is busy before sending command
+    const currentFeederStatus = deviceStatusElement.textContent.toUpperCase();
+    if (currentFeederStatus === 'OPENING' || currentFeederStatus === 'OPEN' || currentFeederStatus === 'CLOSING') {
+        showModal('Feeder Busy', 'The feeder is currently busy. Please wait a moment before sending another command.');
+        return;
+    }
+
+    feedButton.disabled = true;
+    feedMessage.textContent = "Sending feed command...";
+    feedMessage.className = "text-sm text-gray-600 mt-3";
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/v1/feed/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ "requested_by": currentUserName, "mode": "manual" })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+        }
+
+        const data = await response.json();
+        feedMessage.textContent = `Command sent! Status: ${data.status.toUpperCase()}`;
+        feedMessage.className = "text-sm text-green-600 mt-3 font-semibold";
+
+        setTimeout(() => {
+            fetchFeedHistory(1);
+        }, 1500);
+
+        let pollCount = 0;
+        const maxPolls = 5;
+        const pollIntervalMs = 1000;
+
+        if (statusPollingInterval) {
+            clearInterval(statusPollingInterval);
+        }
+
+        statusPollingInterval = setInterval(() => {
+            if (pollCount < maxPolls) {
+                console.log(`Polling status... (${pollCount + 1}/${maxPolls})`);
+                updateDeviceStatus();
+                pollCount++;
+            } else {
+                clearInterval(statusPollingInterval);
+                statusPollingInterval = null;
+                console.log("Status polling finished.");
+            }
+        }, pollIntervalMs);
+
+    } catch (error) {
+        console.error("Error sending feed command:", error);
+        feedMessage.textContent = `Failed to send command: ${error.message}`;
+        feedMessage.className = "text-sm text-red-600 mt-3 font-semibold";
+    } finally {
+        feedButton.disabled = false;
+    }
+}
+
+// Function to fetch and display feeding history
+async function fetchFeedHistory(page = 1) {
+    eventsContainer.innerHTML = `<tr><td colspan="4" class="px-4 py-4 text-center text-gray-500" id="loadingEvents">Loading feeding history...</td></tr>`;
+    pageInfo.textContent = `Loading...`;
+    prevPageButton.disabled = true;
+    nextPageButton.disabled = true;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/v1/feed_history/?page=${page}&limit=${ITEMS_PER_PAGE}`);
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("HTTP error fetching history:", response.status, errorText);
+            throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+        }
+        const data = await response.json();
+
+        eventsContainer.innerHTML = '';
+
+        if (data.items && data.items.length > 0) {
+            data.items.forEach(event => {
+                const row = document.createElement('tr');
+                row.className = 'history-item';
+
+                row.innerHTML = `
+                    <td data-label="Timestamp">${formatTimestamp(event.timestamp)}</td>
+                    <td data-label="Trigger">${event.requested_by || 'N/A'}</td>
+                    <td data-label="Mode">${event.mode || 'N/A'}</td>
+                    <td data-label="Status" class="${getStatusClass(event.status)}">${event.status.toUpperCase() || 'N/A'}</td>
+                `;
+                eventsContainer.appendChild(row);
+            });
+
+            totalPages = data.total_pages;
+            currentPage = data.page;
+            pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+
+            prevPageButton.disabled = currentPage === 1;
+            nextPageButton.disabled = currentPage === totalPages || totalPages === 0;
+        } else {
+            eventsContainer.innerHTML = `<tr><td colspan="4" class="px-4 py-4 text-center text-gray-500">No feeding events found.</td></tr>`;
+            pageInfo.textContent = `Page 0 of 0`;
+        }
+
+    } catch (error) {
+        console.error("Error fetching feed history:", error);
+        eventsContainer.innerHTML = `<tr><td colspan="4" class="px-4 py-4 text-center text-red-600">Error loading history: ${error.message}</td></tr>`;
+        pageInfo.textContent = `Error`;
+    }
+}
+
+// Function to update device status
+async function updateDeviceStatus() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/status/`);
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+        }
+        const data = await response.json();
+        deviceStatusElement.textContent = data.feeder_state.toUpperCase();
+        statusMessageElement.textContent = `Last updated: ${formatTimestamp(data.last_updated)}`;
+    } catch (error) {
+        console.error("Error fetching device status:", error);
+        deviceStatusElement.textContent = "Error";
+        statusMessageElement.textContent = `Could not fetch device status: ${error.message}`;
+    }
+}
+
+// --- Authentication & Session Management ---
+
+async function handleLogout() {
+    try {
+        // Ensure Amplify is defined before calling its methods
+        if (typeof Amplify === 'undefined' || !Amplify.Auth) {
+            console.error("Amplify or Amplify.Auth is not defined when handleLogout is called.");
+            showModal('Logout Error', 'Amplify library not fully loaded. Please try again.');
+            return;
+        }
+        await Amplify.Auth.signOut();
+        sessionStorage.removeItem('authenticatedUserEmail');
+        sessionStorage.removeItem('guestUserName');
+        window.location.href = 'login.html';
+    } catch (error) {
+        console.error("Error during logout:", error);
+        showModal('Logout Error', `Failed to log out: ${error.message}`);
+    }
+}
+
+// --- Event Listeners & Initial Load ---
+
+feedButton.addEventListener('click', sendFeedCommand);
+prevPageButton.addEventListener('click', () => {
+    if (currentPage > 1) {
+        fetchFeedHistory(currentPage - 1);
+    }
+});
+nextPageButton.addEventListener('click', () => {
+    if (currentPage < totalPages) {
+        fetchFeedHistory(currentPage + 1);
+    }
+});
+refreshButton.addEventListener('click', () => {
+    fetchFeedHistory(1);
+    updateDeviceStatus();
+});
+closeModalButton.addEventListener('click', hideModal);
+
+// Initial load logic for index.html
+document.addEventListener('DOMContentLoaded', async () => {
+    // Define amplifyConfig here, within DOMContentLoaded, to ensure window.ENV is available
+    const amplifyConfig = {
+        Auth: {
+            Cognito: {
+                userPoolId: window.ENV?.VITE_USER_POOL_ID,
+                userPoolClientId: window.ENV?.VITE_USER_POOL_CLIENT_ID,
+                region: window.ENV?.VITE_REGION,
+                identityProviders: {
+                    google: {
+                        clientId: window.ENV?.VITE_GOOGLE_CLIENT_ID,
+                        scopes: ['email', 'profile', 'openid']
+                    }
+                },
+                loginWith: {
+                    oauth: {
+                        domain: `${window.ENV?.VITE_USER_POOL_DOMAIN}.auth.${window.ENV?.VITE_REGION}.amazoncognito.com`,
+                        redirectSignIn: `${window.location.origin}/`,
+                        redirectSignOut: `${window.location.origin}/`,
+                        responseType: 'code'
+                    }
+                }
+            }
+        }
+    };
+    // Configure Amplify here, after the library is loaded and DOM is ready
+    Amplify.configure(amplifyConfig);
+    console.log("Amplify configured from index.js DOMContentLoaded.");
+
+    logoutButton.addEventListener('click', handleLogout); // Attach logout listener here
+
+    let userLoggedIn = false;
+
+    // 1. Try to get current Amplify authenticated user
+    try {
+        const user = await Amplify.Auth.getCurrentUser();
+        if (user) {
+            console.log("Amplify authenticated user found:", user);
+            currentUserName = user.signInDetails.loginId || user.username || user.attributes.email || "Authenticated User";
+            sessionStorage.setItem('authenticatedUserEmail', currentUserName);
+            sessionStorage.removeItem('guestUserName');
+            userNameDisplay.textContent = `Welcome, ${currentUserName}!`;
+            userLoggedIn = true;
+        }
+    } catch (error) {
+        console.log("No Amplify authenticated session found or error:", error);
+    }
+
+    // 2. If no Amplify user, check for guest session
+    if (!userLoggedIn) {
+        const storedGuestName = sessionStorage.getItem('guestUserName');
+        if (storedGuestName) {
+            console.log("Guest session found:", storedGuestName);
+            currentUserName = storedGuestName;
+            userNameDisplay.textContent = `Welcome, ${currentUserName}!`;
+            userLoggedIn = true;
+        }
+    }
+
+    // 3. If no user (Amplify or Guest), redirect to login page
+    if (!userLoggedIn) {
+        console.log("No user session found. Redirecting to login.html");
         window.location.href = 'login.html';
         return;
     }
 
-    userNameDisplay.textContent = `Welcome, ${currentUserName}!`;
-
-    // Initial data load and polling
+    // If a user is logged in (either authenticated or guest), load app content
+    console.log(`User "${currentUserName}" is logged in. Loading app content.`);
     fetchFeedHistory(1);
     updateDeviceStatus();
-    if (statusPollingInterval) {
-        clearInterval(statusPollingInterval);
-    }
-    statusPollingInterval = setInterval(updateDeviceStatus, 5000);
 
-    // Pagination Event Listeners
-    prevPageButton.addEventListener('click', () => currentPage > 1 && fetchFeedHistory(currentPage - 1));
-    nextPageButton.addEventListener('click', () => currentPage < totalPages && fetchFeedHistory(currentPage + 1));
-
-    // Main App Event Listeners
-    feedButton.addEventListener('click', sendFeedCommand);
-    refreshButton.addEventListener('click', () => { fetchFeedHistory(1); updateDeviceStatus(); });
-    logoutButton.addEventListener('click', handleLogout);
+    setInterval(() => fetchFeedHistory(currentPage), 30000);
+    setInterval(updateDeviceStatus, 5000);
 });

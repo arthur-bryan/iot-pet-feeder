@@ -1,6 +1,7 @@
 // public/js/login.js
 
 // API_BASE_URL will now be read from window.ENV
+const API_BASE_URL = window.ENV?.VITE_API_BASE_URL;
 // --- Main App Elements ---
 const guestNameInput = document.getElementById('guestNameInput');
 const guestLoginButton = document.getElementById('guestLoginButton');

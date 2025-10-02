@@ -15,6 +15,14 @@ const statusMessageElement = document.getElementById('statusMessage');
 const refreshButton = document.getElementById('refreshButton');
 const userNameDisplay = document.getElementById('userNameDisplay');
 const logoutButton = document.getElementById('logoutButton');
+// --- NEW Configuration Elements ---
+const durationDisplay = document.getElementById('durationDisplay');
+const durationInput = document.getElementById('durationInput');
+const editDurationButton = document.getElementById('editDurationButton');
+const saveDurationButton = document.getElementById('saveDurationButton');
+const cancelDurationButton = document.getElementById('cancelDurationButton');
+// --- END NEW Elements ---
+
 
 // --- Modal Elements ---
 const messageModal = document.getElementById('messageModal');
@@ -30,6 +38,23 @@ let currentUserName = "Guest";
 let statusPollingInterval = null;
 
 // --- Helper Functions ---
+
+function toggleDurationEditMode(isEditing) {
+    if (isEditing) {
+        durationDisplay.classList.add('hidden');
+        durationInput.classList.remove('hidden');
+        editDurationButton.classList.add('hidden');
+        saveDurationButton.classList.remove('hidden');
+        cancelDurationButton.classList.remove('hidden');
+        durationInput.focus();
+    } else {
+        durationDisplay.classList.remove('hidden');
+        durationInput.classList.add('hidden');
+        editDurationButton.classList.remove('hidden');
+        saveDurationButton.classList.add('hidden');
+        cancelDurationButton.classList.add('hidden');
+    }
+}
 
 function formatTimestamp(isoString) {
     try {
@@ -75,6 +100,56 @@ function hideModal() {
 }
 
 // --- API Calls ---
+
+async function fetchServoDuration() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/v1/config/SERVO_OPEN_HOLD_DURATION_MS`);
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+        }
+        const data = await response.json();
+        const duration = data.value || 'N/A';
+        durationDisplay.textContent = duration;
+        durationInput.value = duration; // Also set the input value
+        console.log("Fetched servo duration:", duration);
+    } catch (error) {
+        console.error("Error fetching servo duration:", error);
+        durationDisplay.textContent = "Error";
+    }
+}
+
+async function setServoDuration(newDuration) {
+    if (isNaN(newDuration) || newDuration < 1000 || newDuration > 60000) {
+        showModal('Invalid Value', 'Please enter a hold duration between 1000 ms and 60000 ms (1 to 60 seconds).');
+        return false;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/v1/config/SERVO_OPEN_HOLD_DURATION_MS`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ value: newDuration, key: "SERVO_OPEN_HOLD_DURATION_MS" })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+        }
+
+        const data = await response.json();
+        console.log("Updated servo duration:", data);
+        showModal('Success', `Hold duration updated to ${data.value} ms.`);
+        return true;
+
+    } catch (error) {
+        console.error("Error setting servo duration:", error);
+        showModal('Error', `Failed to save duration: ${error.message}`);
+        return false;
+    }
+}
 
 // Function to send feed command
 async function sendFeedCommand() {
@@ -229,6 +304,27 @@ async function handleLogout() {
 }
 
 // --- Event Listeners & Initial Load ---
+editDurationButton.addEventListener('click', () => {
+    toggleDurationEditMode(true);
+});
+
+cancelDurationButton.addEventListener('click', () => {
+    // Reset input value to current displayed value on cancel
+    durationInput.value = durationDisplay.textContent.replace('ms', '').trim();
+    toggleDurationEditMode(false);
+});
+
+
+saveDurationButton.addEventListener('click', async () => {
+    const newDuration = parseInt(durationInput.value, 10);
+    const success = await setServoDuration(newDuration);
+    if (success) {
+        // Update display only after successful save
+        durationDisplay.textContent = newDuration;
+        toggleDurationEditMode(false);
+    }
+    // If not successful, modal will show error, stay in edit mode
+});
 
 feedButton.addEventListener('click', sendFeedCommand);
 prevPageButton.addEventListener('click', () => {
@@ -320,6 +416,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // If a user is logged in (either authenticated or guest), load app content
     console.log(`User "${currentUserName}" is logged in. Loading app content.`);
+    fetchServoDuration();
     fetchFeedHistory(1);
     updateDeviceStatus();
 

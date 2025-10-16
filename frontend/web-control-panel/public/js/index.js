@@ -444,39 +444,87 @@ async function fetchFeedHistory(page = 1) {
     }
 }
 
-// Function to update device status
-async function updateDeviceStatus() {
+// Function to request real-time device status from ESP32
+async function requestRealtimeStatus() {
     try {
-        // Add timestamp to URL to prevent caching
+        console.log(`Requesting real-time status from: ${API_BASE_URL}/status/request`);
+
+        const response = await fetch(`${API_BASE_URL}/status/request`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Real-time status request failed:", response.status, errorText);
+            throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+        }
+
+        const data = await response.json();
+        console.log("Real-time status response:", data);
+
+        if (data.status) {
+            updateStatusUI(data.status);
+            return data.status;
+        } else {
+            console.warn("Device may be offline - no status received");
+            // Try to get cached status as fallback
+            return await getCachedStatus();
+        }
+    } catch (error) {
+        console.error("Error requesting real-time status:", error);
+        // Fallback to cached status
+        return await getCachedStatus();
+    }
+}
+
+// Function to get cached device status from DynamoDB
+async function getCachedStatus() {
+    try {
         const timestamp = new Date().getTime();
         const url = `${API_BASE_URL}/status/?_t=${timestamp}`;
-        console.log(`Fetching device status from: ${url}`);
+        console.log(`Fetching cached status from: ${url}`);
 
         const response = await fetch(url);
         if (!response.ok) {
             const errorText = await response.text();
-            console.error("Device status fetch failed:", response.status, errorText);
+            console.error("Cached status fetch failed:", response.status, errorText);
             throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
         }
         const data = await response.json();
-        console.log("Device status received:", data);
-        console.log("Current weight from API:", data.current_weight_g, "Type:", typeof data.current_weight_g);
-
-        deviceStatusElement.textContent = data.feeder_state.toUpperCase();
-        statusMessageElement.textContent = `Last updated: ${formatTimestamp(data.last_updated)}`;
-
-        // Update current weight display
-        const weight = data.current_weight_g || 0;
-        console.log("Weight to display:", weight);
-        currentWeightElement.textContent = weight.toFixed(1);
-        console.log("Updated weight display to:", currentWeightElement.textContent);
+        console.log("Cached status received:", data);
+        updateStatusUI(data);
+        return data;
     } catch (error) {
-        console.error("Error fetching device status:", error);
+        console.error("Error fetching cached status:", error);
         deviceStatusElement.textContent = "Error";
         statusMessageElement.textContent = `Could not fetch device status: ${error.message}`;
         currentWeightElement.textContent = "--";
         throw error;
     }
+}
+
+// Helper function to update status UI elements
+function updateStatusUI(statusData) {
+    console.log("Updating UI with status:", statusData);
+    console.log("Current weight from API:", statusData.current_weight_g, "Type:", typeof statusData.current_weight_g);
+
+    deviceStatusElement.textContent = statusData.feeder_state.toUpperCase();
+    statusMessageElement.textContent = `Last updated: ${formatTimestamp(statusData.last_updated)}`;
+
+    // Update current weight display
+    const weight = statusData.current_weight_g || 0;
+    console.log("Weight to display:", weight);
+    currentWeightElement.textContent = weight.toFixed(1);
+    console.log("Updated weight display to:", currentWeightElement.textContent);
+}
+
+// Function to update device status (kept for backward compatibility with auto-refresh)
+async function updateDeviceStatus() {
+    // For auto-refresh, use cached status to reduce costs
+    return await getCachedStatus();
 }
 
 // --- Authentication & Session Management ---
@@ -548,7 +596,7 @@ nextPageButton.addEventListener('click', () => {
     }
 });
 refreshButton.addEventListener('click', async () => {
-    console.log("🔄 Manual refresh triggered - reloading all data...");
+    console.log("🔄 Manual refresh triggered - requesting real-time data...");
 
     // Disable button during refresh
     refreshButton.disabled = true;
@@ -562,11 +610,12 @@ refreshButton.addEventListener('click', async () => {
 
     try {
         // Fetch all data in parallel
+        // Use requestRealtimeStatus() instead of updateDeviceStatus() for real-time data
         await Promise.all([
             fetchServoDuration(),
             fetchWeightThreshold(),
             fetchFeedHistory(1),
-            updateDeviceStatus()
+            requestRealtimeStatus()
         ]);
         console.log("✅ Manual refresh completed successfully!");
     } catch (error) {
@@ -695,7 +744,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log("✅ API_BASE_URL validated:", API_BASE_URL);
 
     // Initial load - await all API calls to ensure data loads
-    console.log("🚀 Starting initial data load...");
+    console.log("🚀 Starting initial data load with real-time status...");
     console.log("Calling Promise.all with 4 API functions...");
 
     try {
@@ -703,7 +752,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             fetchServoDuration(),
             fetchWeightThreshold(),
             fetchFeedHistory(1),
-            updateDeviceStatus()
+            requestRealtimeStatus()  // Request real-time status on initial load
         ]);
         console.log("✅ Initial data loaded successfully!");
     } catch (error) {

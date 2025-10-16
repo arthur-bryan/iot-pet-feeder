@@ -44,8 +44,63 @@ let totalPages = 1;
 let currentUserName = "Guest";
 
 let statusPollingInterval = null;
+let historyPollingInterval = null;
+let isPageVisible = true;
 
 // --- Helper Functions ---
+
+// Handle page visibility changes to stop/start polling
+function handleVisibilityChange() {
+    if (document.hidden) {
+        console.log("📴 Page hidden - stopping auto-refresh to save costs");
+        isPageVisible = false;
+        if (statusPollingInterval) {
+            clearInterval(statusPollingInterval);
+            statusPollingInterval = null;
+        }
+        if (historyPollingInterval) {
+            clearInterval(historyPollingInterval);
+            historyPollingInterval = null;
+        }
+    } else {
+        console.log("👁️ Page visible - resuming auto-refresh");
+        isPageVisible = true;
+        // Immediately fetch fresh data
+        updateDeviceStatus();
+        fetchFeedHistory(currentPage);
+        // Restart intervals
+        startPolling();
+    }
+}
+
+function startPolling() {
+    // Clear any existing intervals first
+    if (statusPollingInterval) clearInterval(statusPollingInterval);
+    if (historyPollingInterval) clearInterval(historyPollingInterval);
+
+    console.log("⏰ Starting optimized polling intervals");
+    console.log("   - Device status: every 10 seconds (reduced from 5s)");
+    console.log("   - Feed history: every 60 seconds (reduced from 30s)");
+    console.log("   - Polling stops when tab is hidden to save costs");
+
+    // Device status: every 10 seconds (reduced from 5)
+    // This matches better with ESP32 15-min updates
+    statusPollingInterval = setInterval(() => {
+        if (isPageVisible) {
+            console.log("Auto-refresh: Updating device status...");
+            updateDeviceStatus();
+        }
+    }, 10000);
+
+    // Feed history: every 60 seconds (reduced from 30)
+    // History doesn't change frequently, so less polling is fine
+    historyPollingInterval = setInterval(() => {
+        if (isPageVisible) {
+            console.log("Auto-refresh: Fetching feed history...");
+            fetchFeedHistory(currentPage);
+        }
+    }, 60000);
+}
 
 function toggleTheme() {
     const html = document.documentElement;
@@ -626,17 +681,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error("Failed to load some or all initial data. Check the errors above for details.");
     }
 
-    console.log("Setting up periodic refresh intervals...");
-    // Set up periodic refresh intervals
-    setInterval(() => {
-        console.log("Auto-refresh: Fetching feed history...");
-        fetchFeedHistory(currentPage);
-    }, 30000);
+    console.log("Setting up optimized polling strategy...");
 
-    setInterval(() => {
-        console.log("Auto-refresh: Updating device status...");
-        updateDeviceStatus();
-    }, 5000);
+    // Set up page visibility detection to stop polling when tab is hidden
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Start polling intervals with optimized timing
+    startPolling();
 
     console.log("✅ Page initialization complete!");
+    console.log("💡 Cost optimization active:");
+    console.log("   - Polling pauses when tab is hidden");
+    console.log("   - Device status: 10s intervals (360 req/hr vs old 720)");
+    console.log("   - Feed history: 60s intervals (60 req/hr vs old 120)");
+    console.log("   - Total: ~420 req/hr per active user (50% reduction!)");
 });

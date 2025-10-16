@@ -249,7 +249,7 @@ async function sendFeedCommand() {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ "requested_by": currentUserName, "mode": "manual" })
+            body: JSON.stringify({ "requested_by": currentUserName, "mode": "api" })
         });
 
         if (!response.ok) {
@@ -350,7 +350,14 @@ async function fetchFeedHistory(page = 1) {
 async function updateDeviceStatus() {
     try {
         console.log(`Fetching device status from: ${API_BASE_URL}/status/`);
-        const response = await fetch(`${API_BASE_URL}/status/`);
+        const response = await fetch(`${API_BASE_URL}/status/`, {
+            method: 'GET',
+            headers: {
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            }
+        });
         if (!response.ok) {
             const errorText = await response.text();
             console.error("Device status fetch failed:", response.status, errorText);
@@ -358,12 +365,16 @@ async function updateDeviceStatus() {
         }
         const data = await response.json();
         console.log("Device status received:", data);
+        console.log("Current weight from API:", data.current_weight_g, "Type:", typeof data.current_weight_g);
+
         deviceStatusElement.textContent = data.feeder_state.toUpperCase();
         statusMessageElement.textContent = `Last updated: ${formatTimestamp(data.last_updated)}`;
 
         // Update current weight display
         const weight = data.current_weight_g || 0;
+        console.log("Weight to display:", weight);
         currentWeightElement.textContent = weight.toFixed(1);
+        console.log("Updated weight display to:", currentWeightElement.textContent);
     } catch (error) {
         console.error("Error fetching device status:", error);
         deviceStatusElement.textContent = "Error";

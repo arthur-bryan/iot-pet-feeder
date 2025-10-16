@@ -138,8 +138,10 @@ function initializeTheme() {
 }
 
 function toggleWeightThresholdEditMode(isEditing) {
+    const weightUnit = weightThresholdDisplay.nextElementSibling; // Get the "g" label
     if (isEditing) {
         weightThresholdDisplay.classList.add('hidden');
+        if (weightUnit) weightUnit.classList.add('hidden');
         weightThresholdInput.classList.remove('hidden');
         editWeightThresholdButton.classList.add('hidden');
         saveWeightThresholdButton.classList.remove('hidden');
@@ -147,6 +149,7 @@ function toggleWeightThresholdEditMode(isEditing) {
         weightThresholdInput.focus();
     } else {
         weightThresholdDisplay.classList.remove('hidden');
+        if (weightUnit) weightUnit.classList.remove('hidden');
         weightThresholdInput.classList.add('hidden');
         editWeightThresholdButton.classList.remove('hidden');
         saveWeightThresholdButton.classList.add('hidden');
@@ -155,8 +158,10 @@ function toggleWeightThresholdEditMode(isEditing) {
 }
 
 function toggleDurationEditMode(isEditing) {
+    const durationUnit = durationDisplay.nextElementSibling; // Get the "ms" label
     if (isEditing) {
         durationDisplay.classList.add('hidden');
+        if (durationUnit) durationUnit.classList.add('hidden');
         durationInput.classList.remove('hidden');
         editDurationButton.classList.add('hidden');
         saveDurationButton.classList.remove('hidden');
@@ -164,6 +169,7 @@ function toggleDurationEditMode(isEditing) {
         durationInput.focus();
     } else {
         durationDisplay.classList.remove('hidden');
+        if (durationUnit) durationUnit.classList.remove('hidden');
         durationInput.classList.add('hidden');
         editDurationButton.classList.remove('hidden');
         saveDurationButton.classList.add('hidden');
@@ -499,7 +505,7 @@ editDurationButton.addEventListener('click', () => {
 });
 
 cancelDurationButton.addEventListener('click', () => {
-    durationInput.value = durationDisplay.textContent.replace('ms', '').trim();
+    durationInput.value = durationDisplay.textContent.trim();
     toggleDurationEditMode(false);
 });
 
@@ -517,7 +523,7 @@ editWeightThresholdButton.addEventListener('click', () => {
 });
 
 cancelWeightThresholdButton.addEventListener('click', () => {
-    weightThresholdInput.value = weightThresholdDisplay.textContent.replace('g', '').trim();
+    weightThresholdInput.value = weightThresholdDisplay.textContent.trim();
     toggleWeightThresholdEditMode(false);
 });
 

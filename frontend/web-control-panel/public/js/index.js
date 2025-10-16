@@ -349,15 +349,12 @@ async function fetchFeedHistory(page = 1) {
 // Function to update device status
 async function updateDeviceStatus() {
     try {
-        console.log(`Fetching device status from: ${API_BASE_URL}/status/`);
-        const response = await fetch(`${API_BASE_URL}/status/`, {
-            method: 'GET',
-            headers: {
-                'Cache-Control': 'no-cache, no-store, must-revalidate',
-                'Pragma': 'no-cache',
-                'Expires': '0'
-            }
-        });
+        // Add timestamp to URL to prevent caching
+        const timestamp = new Date().getTime();
+        const url = `${API_BASE_URL}/status/?_t=${timestamp}`;
+        console.log(`Fetching device status from: ${url}`);
+
+        const response = await fetch(url);
         if (!response.ok) {
             const errorText = await response.text();
             console.error("Device status fetch failed:", response.status, errorText);

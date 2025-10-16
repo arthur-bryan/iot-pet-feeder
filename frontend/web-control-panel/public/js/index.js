@@ -103,9 +103,11 @@ function hideModal() {
 
 async function fetchServoDuration() {
     try {
+        console.log(`Fetching servo duration from: ${API_BASE_URL}/api/v1/config/SERVO_OPEN_HOLD_DURATION_MS`);
         const response = await fetch(`${API_BASE_URL}/api/v1/config/SERVO_OPEN_HOLD_DURATION_MS`);
         if (!response.ok) {
             const errorText = await response.text();
+            console.error("Servo duration fetch failed:", response.status, errorText);
             throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
         }
         const data = await response.json();
@@ -116,6 +118,7 @@ async function fetchServoDuration() {
     } catch (error) {
         console.error("Error fetching servo duration:", error);
         durationDisplay.textContent = "Error";
+        throw error; // Re-throw to be caught by Promise.all
     }
 }
 
@@ -223,6 +226,7 @@ async function fetchFeedHistory(page = 1) {
     nextPageButton.disabled = true;
 
     try {
+        console.log(`Fetching feed history from: ${API_BASE_URL}/api/v1/feed_history/?page=${page}&limit=${ITEMS_PER_PAGE}`);
         const response = await fetch(`${API_BASE_URL}/api/v1/feed_history/?page=${page}&limit=${ITEMS_PER_PAGE}`);
         if (!response.ok) {
             const errorText = await response.text();
@@ -230,6 +234,7 @@ async function fetchFeedHistory(page = 1) {
             throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
         }
         const data = await response.json();
+        console.log("Feed history received:", data);
 
         eventsContainer.innerHTML = '';
 
@@ -268,18 +273,22 @@ async function fetchFeedHistory(page = 1) {
 // Function to update device status
 async function updateDeviceStatus() {
     try {
+        console.log(`Fetching device status from: ${API_BASE_URL}/status/`);
         const response = await fetch(`${API_BASE_URL}/status/`);
         if (!response.ok) {
             const errorText = await response.text();
+            console.error("Device status fetch failed:", response.status, errorText);
             throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
         }
         const data = await response.json();
+        console.log("Device status received:", data);
         deviceStatusElement.textContent = data.feeder_state.toUpperCase();
         statusMessageElement.textContent = `Last updated: ${formatTimestamp(data.last_updated)}`;
     } catch (error) {
         console.error("Error fetching device status:", error);
         deviceStatusElement.textContent = "Error";
         statusMessageElement.textContent = `Could not fetch device status: ${error.message}`;
+        throw error; // Re-throw to be caught by Promise.all
     }
 }
 
@@ -416,10 +425,28 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // If a user is logged in (either authenticated or guest), load app content
     console.log(`User "${currentUserName}" is logged in. Loading app content.`);
-    fetchServoDuration();
-    fetchFeedHistory(1);
-    updateDeviceStatus();
 
+    // Validate API_BASE_URL is available
+    if (!API_BASE_URL) {
+        console.error("API_BASE_URL is not configured. Check env-config.js");
+        showModal('Configuration Error', 'API endpoint is not configured. Please contact support.');
+        return;
+    }
+
+    // Initial load - await all API calls to ensure data loads
+    try {
+        await Promise.all([
+            fetchServoDuration(),
+            fetchFeedHistory(1),
+            updateDeviceStatus()
+        ]);
+        console.log("Initial data loaded successfully.");
+    } catch (error) {
+        console.error("Error loading initial data:", error);
+        showModal('Error', 'Failed to load initial data. Please refresh the page.');
+    }
+
+    // Set up periodic refresh intervals
     setInterval(() => fetchFeedHistory(currentPage), 30000);
     setInterval(updateDeviceStatus, 5000);
 });

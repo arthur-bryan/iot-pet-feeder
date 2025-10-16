@@ -495,8 +495,21 @@ themeToggleButton.addEventListener('click', toggleTheme);
 
 // Initial load logic for index.html
 document.addEventListener('DOMContentLoaded', async () => {
+    console.log("=== DOMContentLoaded event fired ===");
+
     // Initialize theme icons on page load
     initializeTheme();
+
+    // Check if Amplify is loaded
+    if (typeof Amplify === 'undefined') {
+        console.warn("Amplify library not loaded yet, waiting...");
+        // Wait a bit for Amplify to load
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        if (typeof Amplify === 'undefined') {
+            console.error("Amplify library failed to load. Continuing without authentication...");
+        }
+    }
 
     // Define amplifyConfig here, within DOMContentLoaded, to ensure window.ENV is available
     const amplifyConfig = {
@@ -522,25 +535,33 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
     };
+
     // Configure Amplify here, after the library is loaded and DOM is ready
-    Amplify.configure(amplifyConfig);
-    console.log("Amplify configured from index.js DOMContentLoaded.");
+    if (typeof Amplify !== 'undefined') {
+        Amplify.configure(amplifyConfig);
+        console.log("Amplify configured from index.js DOMContentLoaded.");
+    }
 
     let userLoggedIn = false;
 
     // 1. Try to get current Amplify authenticated user
-    try {
-        const user = await Amplify.Auth.getCurrentUser();
-        if (user) {
-            console.log("Amplify authenticated user found:", user);
-            currentUserName = user.signInDetails.loginId || user.username || user.attributes.email || "Authenticated User";
-            sessionStorage.setItem('authenticatedUserEmail', currentUserName);
-            sessionStorage.removeItem('guestUserName');
-            userNameDisplay.textContent = `Welcome, ${currentUserName}!`;
-            userLoggedIn = true;
+    if (typeof Amplify !== 'undefined' && Amplify.Auth) {
+        try {
+            console.log("Checking for Amplify authenticated user...");
+            const user = await Amplify.Auth.getCurrentUser();
+            if (user) {
+                console.log("Amplify authenticated user found:", user);
+                currentUserName = user.signInDetails.loginId || user.username || user.attributes.email || "Authenticated User";
+                sessionStorage.setItem('authenticatedUserEmail', currentUserName);
+                sessionStorage.removeItem('guestUserName');
+                userNameDisplay.textContent = `Welcome, ${currentUserName}!`;
+                userLoggedIn = true;
+            }
+        } catch (error) {
+            console.log("No Amplify authenticated session found or error:", error);
         }
-    } catch (error) {
-        console.log("No Amplify authenticated session found or error:", error);
+    } else {
+        console.log("Amplify not available, skipping authentication check.");
     }
 
     // 2. If no Amplify user, check for guest session
@@ -554,26 +575,42 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // 3. If no user (Amplify or Guest), redirect to login page
+    // 3. If no user session, allow access as Guest (authentication disabled)
     if (!userLoggedIn) {
-        console.log("No user session found. Redirecting to login.html");
-        window.location.href = 'login.html';
-        return;
+        console.log("No user session found. Allowing access as Guest (authentication disabled).");
+        currentUserName = "Guest";
+        userNameDisplay.textContent = `Welcome, ${currentUserName}!`;
+        userLoggedIn = true;
     }
 
-    // If a user is logged in (either authenticated or guest), load app content
-    console.log(`User "${currentUserName}" is logged in. Loading app content.`);
+    // If a user is logged in (or accessing as guest), load app content
+    console.log(`User "${currentUserName}" is accessing the app. Loading app content.`);
+    console.log("window.ENV:", window.ENV);
+    console.log("API_BASE_URL value:", API_BASE_URL);
 
     // Validate API_BASE_URL is available and not a placeholder
     if (!API_BASE_URL || API_BASE_URL.includes('PLACEHOLDER')) {
-        console.error("API_BASE_URL is not configured properly. Current value:", API_BASE_URL);
-        showModal('Configuration Error', 'API endpoint is not configured. Please check env-config.js file and ensure it has valid values.');
+        console.error("❌ API_BASE_URL is not configured properly. Current value:", API_BASE_URL);
+        console.error("To fix this: Update /frontend/web-control-panel/public/env-config.js with your actual API Gateway URL");
+        console.error("You can find the API URL by running: terraform output api_gateway_invoke_url");
+
+        // Show error in UI elements instead of modal
+        deviceStatusElement.textContent = "Not Configured";
+        statusMessageElement.textContent = "API endpoint not configured in env-config.js";
+        durationDisplay.textContent = "Error";
+        weightThresholdDisplay.textContent = "Error";
+        eventsContainer.innerHTML = `<tr><td colspan="4" class="px-4 py-4 text-center text-red-600">API endpoint not configured. Please update env-config.js with your API Gateway URL.</td></tr>`;
+
+        console.log("Stopping here - cannot load data without API URL");
         return;
     }
 
-    console.log("API_BASE_URL validated:", API_BASE_URL);
+    console.log("✅ API_BASE_URL validated:", API_BASE_URL);
 
     // Initial load - await all API calls to ensure data loads
+    console.log("🚀 Starting initial data load...");
+    console.log("Calling Promise.all with 4 API functions...");
+
     try {
         await Promise.all([
             fetchServoDuration(),
@@ -581,13 +618,25 @@ document.addEventListener('DOMContentLoaded', async () => {
             fetchFeedHistory(1),
             updateDeviceStatus()
         ]);
-        console.log("Initial data loaded successfully.");
+        console.log("✅ Initial data loaded successfully!");
     } catch (error) {
-        console.error("Error loading initial data:", error);
-        showModal('Error', 'Failed to load initial data. Please refresh the page.');
+        console.error("❌ Error loading initial data:", error);
+        console.error("Stack trace:", error.stack);
+        // Don't show modal, errors are already displayed in individual components
+        console.error("Failed to load some or all initial data. Check the errors above for details.");
     }
 
+    console.log("Setting up periodic refresh intervals...");
     // Set up periodic refresh intervals
-    setInterval(() => fetchFeedHistory(currentPage), 30000);
-    setInterval(updateDeviceStatus, 5000);
+    setInterval(() => {
+        console.log("Auto-refresh: Fetching feed history...");
+        fetchFeedHistory(currentPage);
+    }, 30000);
+
+    setInterval(() => {
+        console.log("Auto-refresh: Updating device status...");
+        updateDeviceStatus();
+    }, 5000);
+
+    console.log("✅ Page initialization complete!");
 });

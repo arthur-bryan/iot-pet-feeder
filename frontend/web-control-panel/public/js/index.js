@@ -18,6 +18,8 @@ const userNameDisplay = document.getElementById('userNameDisplay');
 const themeToggleButton = document.getElementById('themeToggleButton');
 const sunIcon = document.getElementById('sunIcon');
 const moonIcon = document.getElementById('moonIcon');
+const settingsToggleButton = document.getElementById('settingsToggleButton');
+const settingsDropdown = document.getElementById('settingsDropdown');
 // --- Configuration Elements ---
 const durationDisplay = document.getElementById('durationDisplay');
 const durationInput = document.getElementById('durationInput');
@@ -119,6 +121,16 @@ function toggleTheme() {
 
     localStorage.setItem('theme', newTheme);
     console.log(`Theme changed to: ${newTheme}`);
+}
+
+function toggleSettingsDropdown() {
+    settingsDropdown.classList.toggle('hidden');
+}
+
+function closeSettingsDropdown(event) {
+    if (!settingsToggleButton.contains(event.target) && !settingsDropdown.contains(event.target)) {
+        settingsDropdown.classList.add('hidden');
+    }
 }
 
 function initializeTheme() {
@@ -600,12 +612,11 @@ refreshButton.addEventListener('click', async () => {
 
     // Disable button during refresh
     refreshButton.disabled = true;
-    const originalText = refreshButton.innerHTML;
+    const originalHTML = refreshButton.innerHTML;
     refreshButton.innerHTML = `
-        <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-5 h-5 text-gray-600 dark:text-gray-400 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
         </svg>
-        Refreshing...
     `;
 
     try {
@@ -621,13 +632,17 @@ refreshButton.addEventListener('click', async () => {
     } catch (error) {
         console.error("❌ Error during manual refresh:", error);
     } finally {
-        // Re-enable button and restore original text
+        // Re-enable button and restore original HTML
         refreshButton.disabled = false;
-        refreshButton.innerHTML = originalText;
+        refreshButton.innerHTML = originalHTML;
     }
 });
 closeModalButton.addEventListener('click', hideModal);
 themeToggleButton.addEventListener('click', toggleTheme);
+settingsToggleButton.addEventListener('click', toggleSettingsDropdown);
+
+// Close dropdown when clicking outside
+document.addEventListener('click', closeSettingsDropdown);
 
 // Initial load logic for index.html
 document.addEventListener('DOMContentLoaded', async () => {

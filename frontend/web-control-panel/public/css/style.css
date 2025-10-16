@@ -57,6 +57,11 @@ body {
     color: #92400E;
 }
 
+.dark .status-queued {
+    background-color: #451a03;
+    color: #fcd34d;
+}
+
 .status-sent {
     display: inline-flex;
     align-items: center;
@@ -66,6 +71,11 @@ body {
     font-weight: 600;
     background-color: #DBEAFE;
     color: #1E40AF;
+}
+
+.dark .status-sent {
+    background-color: #1e3a8a;
+    color: #93c5fd;
 }
 
 .status-completed {
@@ -79,6 +89,11 @@ body {
     color: #065F46;
 }
 
+.dark .status-completed {
+    background-color: #064e3b;
+    color: #6ee7b7;
+}
+
 .status-failed, .status-denied_weight_exceeded {
     display: inline-flex;
     align-items: center;
@@ -88,6 +103,11 @@ body {
     font-weight: 600;
     background-color: #FEE2E2;
     color: #991B1B;
+}
+
+.dark .status-failed, .dark .status-denied_weight_exceeded {
+    background-color: #7f1d1d;
+    color: #fca5a5;
 }
 
 /* Responsive table */

@@ -47,6 +47,15 @@
                     <div class="text-right hidden sm:block">
                         <p id="userNameDisplay" class="text-sm font-medium text-gray-700 dark:text-gray-300">Welcome!</p>
                     </div>
+
+                    <!-- Refresh Button -->
+                    <button id="refreshButton" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="Refresh all data">
+                        <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                    </button>
+
+                    <!-- Theme Toggle Button -->
                     <button id="themeToggleButton" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" title="Toggle theme">
                         <svg id="sunIcon" class="w-5 h-5 text-gray-600 dark:text-gray-400 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
@@ -55,6 +64,61 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
                         </svg>
                     </button>
+
+                    <!-- Settings Dropdown -->
+                    <div class="relative">
+                        <button id="settingsToggleButton" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" title="Settings">
+                            <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                        </button>
+
+                        <!-- Settings Dropdown Panel -->
+                        <div id="settingsDropdown" class="hidden absolute right-0 mt-2 w-96 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden">
+                            <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                                <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Configuration</h3>
+                            </div>
+
+                            <div class="p-4 space-y-4">
+                                <!-- Hold Duration -->
+                                <div class="space-y-2">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex-1">
+                                            <p class="text-sm font-medium text-gray-900 dark:text-white">Hold Open Duration</p>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Time gate stays open (ms)</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span id="durationDisplay" class="text-base font-semibold text-gray-900 dark:text-white">Loading...</span>
+                                        <span class="text-sm text-gray-500 dark:text-gray-400">ms</span>
+                                        <input type="number" id="durationInput" class="hidden flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm font-mono focus:ring-2 focus:ring-indigo-500 focus:border-transparent" min="1000" max="60000" step="500" placeholder="e.g. 3000">
+                                        <button id="editDurationButton" class="ml-auto text-xs px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 font-medium transition-colors">Edit</button>
+                                        <button id="saveDurationButton" class="hidden text-xs px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium transition-colors">Save</button>
+                                        <button id="cancelDurationButton" class="hidden text-xs px-3 py-1.5 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 font-medium transition-colors">Cancel</button>
+                                    </div>
+                                </div>
+
+                                <!-- Weight Threshold -->
+                                <div class="space-y-2 pt-4 border-t border-gray-200 dark:border-gray-700">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex-1">
+                                            <p class="text-sm font-medium text-gray-900 dark:text-white">Weight Threshold</p>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Max food weight in grams</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span id="weightThresholdDisplay" class="text-base font-semibold text-gray-900 dark:text-white">Loading...</span>
+                                        <span class="text-sm text-gray-500 dark:text-gray-400">g</span>
+                                        <input type="number" id="weightThresholdInput" class="hidden flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm font-mono focus:ring-2 focus:ring-indigo-500 focus:border-transparent" min="50" max="5000" step="50" placeholder="e.g. 450">
+                                        <button id="editWeightThresholdButton" class="ml-auto text-xs px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 font-medium transition-colors">Edit</button>
+                                        <button id="saveWeightThresholdButton" class="hidden text-xs px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium transition-colors">Save</button>
+                                        <button id="cancelWeightThresholdButton" class="hidden text-xs px-3 py-1.5 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 font-medium transition-colors">Cancel</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -92,53 +156,6 @@
                     Feed Now
                 </button>
                 <p id="feedMessage" class="text-xs text-gray-600 dark:text-gray-400 mt-3 min-h-[1rem]"></p>
-            </div>
-        </div>
-
-        <!-- Configuration Section -->
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-8 transition-colors">
-            <div class="flex items-center justify-between mb-6">
-                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Configuration</h2>
-                <button id="refreshButton" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                    </svg>
-                    Refresh All
-                </button>
-            </div>
-
-            <div class="space-y-4">
-                <!-- Hold Duration -->
-                <div class="flex items-center justify-between py-4 border-b border-gray-100 dark:border-gray-700 last:border-0">
-                    <div class="flex-1">
-                        <p class="text-sm font-medium text-gray-900 dark:text-white">Hold Open Duration</p>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Time the feeder gate stays open (in milliseconds, 1000ms = 1 second)</p>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <span id="durationDisplay" class="text-lg font-semibold text-gray-900 dark:text-white">Loading...</span>
-                        <span class="text-sm text-gray-500 dark:text-gray-400">ms</span>
-                        <input type="number" id="durationInput" class="hidden w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm font-mono focus:ring-2 focus:ring-indigo-500 focus:border-transparent" min="1000" max="60000" step="500" placeholder="e.g. 3000">
-                        <button id="editDurationButton" class="text-xs px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 font-medium transition-colors">Edit</button>
-                        <button id="saveDurationButton" class="hidden text-xs px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium transition-colors">Save</button>
-                        <button id="cancelDurationButton" class="hidden text-xs px-3 py-1.5 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 font-medium transition-colors">Cancel</button>
-                    </div>
-                </div>
-
-                <!-- Weight Threshold -->
-                <div class="flex items-center justify-between py-4">
-                    <div class="flex-1">
-                        <p class="text-sm font-medium text-gray-900 dark:text-white">Weight Threshold</p>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Maximum food weight in grams before denying feeding (prevents overfeeding)</p>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <span id="weightThresholdDisplay" class="text-lg font-semibold text-gray-900 dark:text-white">Loading...</span>
-                        <span class="text-sm text-gray-500 dark:text-gray-400">g</span>
-                        <input type="number" id="weightThresholdInput" class="hidden w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm font-mono focus:ring-2 focus:ring-indigo-500 focus:border-transparent" min="50" max="5000" step="50" placeholder="e.g. 450">
-                        <button id="editWeightThresholdButton" class="text-xs px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 font-medium transition-colors">Edit</button>
-                        <button id="saveWeightThresholdButton" class="hidden text-xs px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium transition-colors">Save</button>
-                        <button id="cancelWeightThresholdButton" class="hidden text-xs px-3 py-1.5 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 font-medium transition-colors">Cancel</button>
-                    </div>
-                </div>
             </div>
         </div>
 

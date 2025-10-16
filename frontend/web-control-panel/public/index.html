@@ -3,138 +3,175 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Pet Feeder Control</title>
-    <!-- Google Fonts: Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Link to external custom CSS -->
+    <title>Pet Feeder</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'inter': ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
 </head>
-<body class="font-inter antialiased bg-gradient-to-br from-blue-100 to-indigo-200 min-h-screen flex items-center justify-center p-4 sm:p-6">
+<body class="font-inter antialiased bg-gray-50 min-h-screen">
 
-    <!-- Main Application Content -->
-    <div id="appContent" class="main-container bg-white rounded-2xl shadow-xl p-6 sm:p-8 w-full max-w-2xl text-center">
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-4xl sm:text-5xl font-extrabold text-gray-900 leading-tight">Smart Pet Feeder</h1>
-            <div class="text-right">
-                <p id="userNameDisplay" class="text-lg font-medium text-gray-700">Welcome, Guest!</p>
-                <button id="logoutButton" class="text-sm text-indigo-600 hover:text-indigo-800 transition-colors duration-200">Logout</button>
-            </div>
-        </div>
-        <p class="text-lg text-gray-600 mb-8">Manage your pet's meals with ease, from anywhere.</p>
-
-        <!-- Device Status Section -->
-        <div class="card bg-gray-50 p-6 rounded-xl shadow-inner mb-8">
-            <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">Device Status</h2>
-            <p id="deviceStatus" class="text-xl font-semibold text-gray-700 mb-2">Loading...</p>
-            <p id="statusMessage" class="text-sm text-gray-500"></p>
-            <div class="mt-4 p-4 bg-white rounded-lg border border-gray-200">
-                <span class="text-lg font-medium text-gray-700">Current Weight: </span>
-                <span id="currentWeight" class="text-xl font-bold text-indigo-600">--</span>
-                <span class="text-lg text-gray-700">g</span>
-            </div>
-        </div>
-
-        <div class="card bg-gray-50 p-6 rounded-xl shadow-inner mb-8 text-left">
-            <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">Configuration</h2>
-
-            <!-- Servo Duration Config -->
-            <div class="flex flex-col sm:flex-row justify-between items-center bg-white p-4 rounded-lg shadow-md border border-gray-200 mb-4">
-                <span class="text-lg font-medium text-gray-700 mb-2 sm:mb-0">Hold Open Duration (ms):</span>
-
-                <div class="flex items-center gap-2">
-                    <span id="durationDisplay" class="text-xl font-bold text-indigo-600">Loading...</span>
-
-                    <input type="number" id="durationInput" class="hidden w-24 p-2 border border-gray-300 rounded-md text-right font-mono" min="1000" max="60000" step="500">
-
-                    <button id="editDurationButton" class="text-sm py-1 px-3 bg-indigo-500 text-white rounded-md hover:bg-indigo-600 transition-colors duration-200">Edit</button>
-                    <button id="saveDurationButton" class="hidden text-sm py-1 px-3 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors duration-200">Save</button>
-                    <button id="cancelDurationButton" class="hidden text-sm py-1 px-3 bg-gray-400 text-white rounded-md hover:bg-gray-500 transition-colors duration-200">Cancel</button>
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-40 backdrop-blur-sm bg-white/90">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                        </svg>
+                    </div>
+                    <h1 class="text-xl font-semibold text-gray-900">Pet Feeder</h1>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="text-right hidden sm:block">
+                        <p id="userNameDisplay" class="text-sm font-medium text-gray-700">Welcome!</p>
+                    </div>
+                    <button id="logoutButton" class="text-sm text-gray-600 hover:text-gray-900 font-medium transition-colors">
+                        Logout
+                    </button>
                 </div>
             </div>
-            <p class="text-xs text-gray-500 mt-2 mb-4">The time the feeder gate stays open (e.g., 3000 ms = 3 seconds).</p>
+        </div>
+    </header>
 
-            <!-- Weight Threshold Config -->
-            <div class="flex flex-col sm:flex-row justify-between items-center bg-white p-4 rounded-lg shadow-md border border-gray-200">
-                <span class="text-lg font-medium text-gray-700 mb-2 sm:mb-0">Weight Threshold (g):</span>
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-                <div class="flex items-center gap-2">
-                    <span id="weightThresholdDisplay" class="text-xl font-bold text-indigo-600">Loading...</span>
+        <!-- Status Overview Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
 
-                    <input type="number" id="weightThresholdInput" class="hidden w-24 p-2 border border-gray-300 rounded-md text-right font-mono" min="50" max="5000" step="50">
+            <!-- Device Status Card -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-medium text-gray-600">Device Status</h3>
+                    <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                </div>
+                <p id="deviceStatus" class="text-2xl font-semibold text-gray-900 mb-1">Loading...</p>
+                <p id="statusMessage" class="text-xs text-gray-500"></p>
+            </div>
 
-                    <button id="editWeightThresholdButton" class="text-sm py-1 px-3 bg-indigo-500 text-white rounded-md hover:bg-indigo-600 transition-colors duration-200">Edit</button>
-                    <button id="saveWeightThresholdButton" class="hidden text-sm py-1 px-3 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors duration-200">Save</button>
-                    <button id="cancelWeightThresholdButton" class="hidden text-sm py-1 px-3 bg-gray-400 text-white rounded-md hover:bg-gray-500 transition-colors duration-200">Cancel</button>
+            <!-- Current Weight Card -->
+            <div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl shadow-sm border border-indigo-100 p-6 hover:shadow-md transition-shadow">
+                <h3 class="text-sm font-medium text-indigo-900 mb-4">Current Weight</h3>
+                <div class="flex items-baseline gap-2">
+                    <span id="currentWeight" class="text-4xl font-bold text-indigo-600">--</span>
+                    <span class="text-lg text-indigo-400 font-medium">g</span>
                 </div>
             </div>
-            <p class="text-xs text-gray-500 mt-2">Maximum food weight before feeding is denied (e.g., 450g).</p>
+
+            <!-- Quick Feed Card -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+                <h3 class="text-sm font-medium text-gray-600 mb-4">Quick Feed</h3>
+                <button id="feedButton" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold py-3 px-4 rounded-xl hover:from-indigo-700 hover:to-purple-700 active:scale-95 transition-all duration-200 shadow-lg shadow-indigo-500/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none">
+                    Feed Now
+                </button>
+                <p id="feedMessage" class="text-xs text-gray-600 mt-3 min-h-[1rem]"></p>
+            </div>
         </div>
 
-        <!-- Container for side-by-side buttons -->
-        <div class="flex flex-col md:flex-row gap-4 mb-8">
-            <!-- Manual Feed Section -->
-            <div class="card bg-gradient-to-r from-indigo-50 to-blue-50 p-6 rounded-xl shadow-inner flex-1">
-                <h2 class="text-2xl sm:text-3xl font-bold text-indigo-800 mb-4">Manual Feed</h2>
-                <p class="text-gray-700 mb-6">Dispense food instantly with a single tap.</p>
-                <button id="feedButton" class="w-full text-lg py-3 px-6 bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-bold rounded-xl shadow-lg transition-all duration-300 ease-in-out hover:from-indigo-700 hover:to-blue-700 hover:shadow-xl hover:-translate-y-0.5 active:from-indigo-800 active:to-blue-800 active:shadow-inner active:translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-500 disabled:shadow-none disabled:transform-none">
-                    Feed Now!
+        <!-- Configuration Section -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-8">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-lg font-semibold text-gray-900">Configuration</h2>
+                <button id="refreshButton" class="text-sm text-gray-600 hover:text-gray-900 font-medium flex items-center gap-2 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                    Refresh
                 </button>
-                <p id="feedMessage" class="text-sm text-gray-600 mt-4 h-5"></p>
             </div>
 
-            <!-- Refresh Button Section -->
-            <div class="card bg-gray-50 p-6 rounded-xl shadow-inner flex-1">
-                <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">Refresh Data</h2>
-                <p class="text-gray-700 mb-6">Update status and history.</p>
-                <button id="refreshButton" class="w-full text-lg py-3 px-6 bg-gray-200 text-gray-800 font-bold rounded-xl shadow-lg transition-all duration-300 ease-in-out hover:bg-gray-300 hover:shadow-xl hover:-translate-y-0.5 active:bg-gray-400 active:shadow-inner active:translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400 disabled:shadow-none disabled:transform-none flex items-center justify-center">
-                    Refresh Status & History
-                </button>
+            <div class="space-y-4">
+                <!-- Hold Duration -->
+                <div class="flex items-center justify-between py-4 border-b border-gray-100 last:border-0">
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-gray-900">Hold Open Duration</p>
+                        <p class="text-xs text-gray-500 mt-0.5">Time the feeder gate stays open</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span id="durationDisplay" class="text-lg font-semibold text-gray-900">Loading...</span>
+                        <input type="number" id="durationInput" class="hidden w-24 px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-indigo-500 focus:border-transparent" min="1000" max="60000" step="500">
+                        <button id="editDurationButton" class="text-xs px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium transition-colors">Edit</button>
+                        <button id="saveDurationButton" class="hidden text-xs px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium transition-colors">Save</button>
+                        <button id="cancelDurationButton" class="hidden text-xs px-3 py-1.5 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 font-medium transition-colors">Cancel</button>
+                    </div>
+                </div>
+
+                <!-- Weight Threshold -->
+                <div class="flex items-center justify-between py-4">
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-gray-900">Weight Threshold</p>
+                        <p class="text-xs text-gray-500 mt-0.5">Maximum food weight before denial</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span id="weightThresholdDisplay" class="text-lg font-semibold text-gray-900">Loading...</span>
+                        <input type="number" id="weightThresholdInput" class="hidden w-24 px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-indigo-500 focus:border-transparent" min="50" max="5000" step="50">
+                        <button id="editWeightThresholdButton" class="text-xs px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium transition-colors">Edit</button>
+                        <button id="saveWeightThresholdButton" class="hidden text-xs px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium transition-colors">Save</button>
+                        <button id="cancelWeightThresholdButton" class="hidden text-xs px-3 py-1.5 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 font-medium transition-colors">Cancel</button>
+                    </div>
+                </div>
             </div>
         </div>
 
         <!-- Feeding History Section -->
-        <div class="card bg-white p-6 rounded-xl shadow-md">
-            <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">Feeding History</h2>
-            <p class="text-gray-700 mb-6">Past feeding events.</p>
-            <div class="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
-                <table id="historyTable" class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-100">
-                        <tr>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trigger</th>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mode</th>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-6">Feeding History</h2>
+
+            <div class="overflow-x-auto -mx-6 px-6">
+                <table id="historyTable" class="min-w-full">
+                    <thead>
+                        <tr class="border-b border-gray-200">
+                            <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider pb-3">Timestamp</th>
+                            <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider pb-3">Trigger</th>
+                            <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider pb-3">Mode</th>
+                            <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider pb-3">Status</th>
                         </tr>
                     </thead>
-                    <tbody id="eventsContainer" class="bg-white divide-y divide-gray-100">
-                        <!-- Event rows will be dynamically loaded here -->
-                        <tr><td colspan="4" class="px-4 py-4 text-center text-gray-500" id="loadingEvents">Loading feeding history...</td></tr>
+                    <tbody id="eventsContainer" class="divide-y divide-gray-100">
+                        <tr>
+                            <td colspan="4" class="py-8 text-center text-sm text-gray-500" id="loadingEvents">Loading feeding history...</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
 
-            <div class="pagination-controls flex justify-between items-center mt-4">
-                <button id="prevPageButton" class="bg-gray-200 text-gray-700 py-2 px-5 rounded-lg font-medium transition-all duration-200 ease-in-out hover:bg-gray-300 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400">Previous</button>
-                <span id="pageInfo" class="text-gray-700 font-medium text-sm sm:text-base">Page 1 of 1</span>
-                <button id="nextPageButton" class="bg-gray-200 text-gray-700 py-2 px-5 rounded-lg font-medium transition-all duration-300 ease-in-out hover:bg-gray-300 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400">Next</button>
+            <!-- Pagination -->
+            <div class="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
+                <button id="prevPageButton" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                    Previous
+                </button>
+                <span id="pageInfo" class="text-sm text-gray-700 font-medium">Page 1 of 1</span>
+                <button id="nextPageButton" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                    Next
+                </button>
             </div>
         </div>
-    </div>
+    </main>
 
-    <!-- Modal Structure -->
-    <div id="messageModal" class="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50 hidden">
-        <div class="bg-white p-8 rounded-lg shadow-xl max-w-sm w-full text-center">
-            <h3 id="modalTitle" class="text-2xl font-bold text-gray-800 mb-4"></h3>
-            <p id="modalMessage" class="text-gray-700 mb-6"></p>
-            <button id="closeModalButton" class="w-full text-lg py-3 px-6 bg-indigo-600 text-white font-bold rounded-xl shadow-lg transition-all duration-300 ease-in-out hover:bg-indigo-700 active:bg-indigo-800">
+    <!-- Modal -->
+    <div id="messageModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 hidden p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 transform transition-all">
+            <h3 id="modalTitle" class="text-xl font-semibold text-gray-900 mb-3"></h3>
+            <p id="modalMessage" class="text-sm text-gray-600 mb-6"></p>
+            <button id="closeModalButton" class="w-full bg-indigo-600 text-white font-medium py-3 px-4 rounded-xl hover:bg-indigo-700 active:scale-95 transition-all">
                 OK
             </button>
         </div>
     </div>
 
-    <!-- Load env-config.js first, then Amplify, then your scripts -->
+    <!-- Scripts -->
     <script src="env-config.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/aws-amplify/3.3.9-sdk-bump.15/aws-amplify.min.js"></script>
     <script src="js/index.js"></script>

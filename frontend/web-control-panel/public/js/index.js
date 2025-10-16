@@ -12,16 +12,22 @@ const nextPageButton = document.getElementById('nextPageButton');
 const pageInfo = document.getElementById('pageInfo');
 const deviceStatusElement = document.getElementById('deviceStatus');
 const statusMessageElement = document.getElementById('statusMessage');
+const currentWeightElement = document.getElementById('currentWeight');
 const refreshButton = document.getElementById('refreshButton');
 const userNameDisplay = document.getElementById('userNameDisplay');
 const logoutButton = document.getElementById('logoutButton');
-// --- NEW Configuration Elements ---
+// --- Configuration Elements ---
 const durationDisplay = document.getElementById('durationDisplay');
 const durationInput = document.getElementById('durationInput');
 const editDurationButton = document.getElementById('editDurationButton');
 const saveDurationButton = document.getElementById('saveDurationButton');
 const cancelDurationButton = document.getElementById('cancelDurationButton');
-// --- END NEW Elements ---
+const weightThresholdDisplay = document.getElementById('weightThresholdDisplay');
+const weightThresholdInput = document.getElementById('weightThresholdInput');
+const editWeightThresholdButton = document.getElementById('editWeightThresholdButton');
+const saveWeightThresholdButton = document.getElementById('saveWeightThresholdButton');
+const cancelWeightThresholdButton = document.getElementById('cancelWeightThresholdButton');
+// --- END Configuration Elements ---
 
 
 // --- Modal Elements ---
@@ -38,6 +44,23 @@ let currentUserName = "Guest";
 let statusPollingInterval = null;
 
 // --- Helper Functions ---
+
+function toggleWeightThresholdEditMode(isEditing) {
+    if (isEditing) {
+        weightThresholdDisplay.classList.add('hidden');
+        weightThresholdInput.classList.remove('hidden');
+        editWeightThresholdButton.classList.add('hidden');
+        saveWeightThresholdButton.classList.remove('hidden');
+        cancelWeightThresholdButton.classList.remove('hidden');
+        weightThresholdInput.focus();
+    } else {
+        weightThresholdDisplay.classList.remove('hidden');
+        weightThresholdInput.classList.add('hidden');
+        editWeightThresholdButton.classList.remove('hidden');
+        saveWeightThresholdButton.classList.add('hidden');
+        cancelWeightThresholdButton.classList.add('hidden');
+    }
+}
 
 function toggleDurationEditMode(isEditing) {
     if (isEditing) {
@@ -113,12 +136,33 @@ async function fetchServoDuration() {
         const data = await response.json();
         const duration = data.value || 'N/A';
         durationDisplay.textContent = duration;
-        durationInput.value = duration; // Also set the input value
+        durationInput.value = duration;
         console.log("Fetched servo duration:", duration);
     } catch (error) {
         console.error("Error fetching servo duration:", error);
         durationDisplay.textContent = "Error";
-        throw error; // Re-throw to be caught by Promise.all
+        throw error;
+    }
+}
+
+async function fetchWeightThreshold() {
+    try {
+        console.log(`Fetching weight threshold from: ${API_BASE_URL}/api/v1/config/WEIGHT_THRESHOLD_G`);
+        const response = await fetch(`${API_BASE_URL}/api/v1/config/WEIGHT_THRESHOLD_G`);
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Weight threshold fetch failed:", response.status, errorText);
+            throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+        }
+        const data = await response.json();
+        const threshold = data.value || 450;
+        weightThresholdDisplay.textContent = threshold;
+        weightThresholdInput.value = threshold;
+        console.log("Fetched weight threshold:", threshold);
+    } catch (error) {
+        console.error("Error fetching weight threshold:", error);
+        weightThresholdDisplay.textContent = "Error";
+        throw error;
     }
 }
 
@@ -150,6 +194,38 @@ async function setServoDuration(newDuration) {
     } catch (error) {
         console.error("Error setting servo duration:", error);
         showModal('Error', `Failed to save duration: ${error.message}`);
+        return false;
+    }
+}
+
+async function setWeightThreshold(newThreshold) {
+    if (isNaN(newThreshold) || newThreshold < 50 || newThreshold > 5000) {
+        showModal('Invalid Value', 'Please enter a weight threshold between 50g and 5000g.');
+        return false;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/v1/config/WEIGHT_THRESHOLD_G`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ value: newThreshold, key: "WEIGHT_THRESHOLD_G" })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+        }
+
+        const data = await response.json();
+        console.log("Updated weight threshold:", data);
+        showModal('Success', `Weight threshold updated to ${data.value}g.`);
+        return true;
+
+    } catch (error) {
+        console.error("Error setting weight threshold:", error);
+        showModal('Error', `Failed to save threshold: ${error.message}`);
         return false;
     }
 }
@@ -284,11 +360,16 @@ async function updateDeviceStatus() {
         console.log("Device status received:", data);
         deviceStatusElement.textContent = data.feeder_state.toUpperCase();
         statusMessageElement.textContent = `Last updated: ${formatTimestamp(data.last_updated)}`;
+
+        // Update current weight display
+        const weight = data.current_weight_g || 0;
+        currentWeightElement.textContent = weight.toFixed(1);
     } catch (error) {
         console.error("Error fetching device status:", error);
         deviceStatusElement.textContent = "Error";
         statusMessageElement.textContent = `Could not fetch device status: ${error.message}`;
-        throw error; // Re-throw to be caught by Promise.all
+        currentWeightElement.textContent = "--";
+        throw error;
     }
 }
 
@@ -318,21 +399,35 @@ editDurationButton.addEventListener('click', () => {
 });
 
 cancelDurationButton.addEventListener('click', () => {
-    // Reset input value to current displayed value on cancel
     durationInput.value = durationDisplay.textContent.replace('ms', '').trim();
     toggleDurationEditMode(false);
 });
-
 
 saveDurationButton.addEventListener('click', async () => {
     const newDuration = parseInt(durationInput.value, 10);
     const success = await setServoDuration(newDuration);
     if (success) {
-        // Update display only after successful save
         durationDisplay.textContent = newDuration;
         toggleDurationEditMode(false);
     }
-    // If not successful, modal will show error, stay in edit mode
+});
+
+editWeightThresholdButton.addEventListener('click', () => {
+    toggleWeightThresholdEditMode(true);
+});
+
+cancelWeightThresholdButton.addEventListener('click', () => {
+    weightThresholdInput.value = weightThresholdDisplay.textContent.replace('g', '').trim();
+    toggleWeightThresholdEditMode(false);
+});
+
+saveWeightThresholdButton.addEventListener('click', async () => {
+    const newThreshold = parseInt(weightThresholdInput.value, 10);
+    const success = await setWeightThreshold(newThreshold);
+    if (success) {
+        weightThresholdDisplay.textContent = newThreshold;
+        toggleWeightThresholdEditMode(false);
+    }
 });
 
 feedButton.addEventListener('click', sendFeedCommand);
@@ -437,6 +532,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         await Promise.all([
             fetchServoDuration(),
+            fetchWeightThreshold(),
             fetchFeedHistory(1),
             updateDeviceStatus()
         ]);

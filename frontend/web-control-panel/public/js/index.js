@@ -541,9 +541,35 @@ nextPageButton.addEventListener('click', () => {
         fetchFeedHistory(currentPage + 1);
     }
 });
-refreshButton.addEventListener('click', () => {
-    fetchFeedHistory(1);
-    updateDeviceStatus();
+refreshButton.addEventListener('click', async () => {
+    console.log("🔄 Manual refresh triggered - reloading all data...");
+
+    // Disable button during refresh
+    refreshButton.disabled = true;
+    const originalText = refreshButton.innerHTML;
+    refreshButton.innerHTML = `
+        <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        Refreshing...
+    `;
+
+    try {
+        // Fetch all data in parallel
+        await Promise.all([
+            fetchServoDuration(),
+            fetchWeightThreshold(),
+            fetchFeedHistory(1),
+            updateDeviceStatus()
+        ]);
+        console.log("✅ Manual refresh completed successfully!");
+    } catch (error) {
+        console.error("❌ Error during manual refresh:", error);
+    } finally {
+        // Re-enable button and restore original text
+        refreshButton.disabled = false;
+        refreshButton.innerHTML = originalText;
+    }
 });
 closeModalButton.addEventListener('click', hideModal);
 themeToggleButton.addEventListener('click', toggleTheme);

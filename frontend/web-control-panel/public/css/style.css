@@ -29,12 +29,20 @@ body {
     color: #374151;
 }
 
+.dark #historyTable td {
+    color: #d1d5db;
+}
+
 #historyTable tbody tr {
     transition: all 0.2s ease;
 }
 
 #historyTable tbody tr:hover {
     background-color: #f9fafb;
+}
+
+.dark #historyTable tbody tr:hover {
+    background-color: #374151;
 }
 
 /* Status badges */
@@ -102,6 +110,11 @@ body {
         border-radius: 0.75rem;
         padding: 1rem;
         background-color: #fff;
+    }
+
+    .dark #historyTable tr {
+        border-color: #374151;
+        background-color: #1f2937;
     }
 
     #historyTable td {

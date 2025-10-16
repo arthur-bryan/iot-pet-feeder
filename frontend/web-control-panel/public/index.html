@@ -8,7 +8,17 @@
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
+        // Initialize theme before page renders to prevent flash
+        (function() {
+            const theme = localStorage.getItem('theme') || 'light';
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+    <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
                     fontFamily: {
@@ -19,10 +29,10 @@
         }
     </script>
 </head>
-<body class="font-inter antialiased bg-gray-50 min-h-screen">
+<body class="font-inter antialiased bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors">
 
     <!-- Header -->
-    <header class="bg-white border-b border-gray-200 sticky top-0 z-40 backdrop-blur-sm bg-white/90">
+    <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40 backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 transition-colors">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div class="flex justify-between items-center">
                 <div class="flex items-center gap-3">
@@ -31,14 +41,19 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
                         </svg>
                     </div>
-                    <h1 class="text-xl font-semibold text-gray-900">Pet Feeder</h1>
+                    <h1 class="text-xl font-semibold text-gray-900 dark:text-white">Pet Feeder</h1>
                 </div>
                 <div class="flex items-center gap-4">
                     <div class="text-right hidden sm:block">
-                        <p id="userNameDisplay" class="text-sm font-medium text-gray-700">Welcome!</p>
+                        <p id="userNameDisplay" class="text-sm font-medium text-gray-700 dark:text-gray-300">Welcome!</p>
                     </div>
-                    <button id="logoutButton" class="text-sm text-gray-600 hover:text-gray-900 font-medium transition-colors">
-                        Logout
+                    <button id="themeToggleButton" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" title="Toggle theme">
+                        <svg id="sunIcon" class="w-5 h-5 text-gray-600 dark:text-gray-400 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                        </svg>
+                        <svg id="moonIcon" class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                        </svg>
                     </button>
                 </div>
             </div>
@@ -52,39 +67,39 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
 
             <!-- Device Status Card -->
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-all">
                 <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-sm font-medium text-gray-600">Device Status</h3>
+                    <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">Device Status</h3>
                     <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                 </div>
-                <p id="deviceStatus" class="text-2xl font-semibold text-gray-900 mb-1">Loading...</p>
-                <p id="statusMessage" class="text-xs text-gray-500"></p>
+                <p id="deviceStatus" class="text-2xl font-semibold text-gray-900 dark:text-white mb-1">Loading...</p>
+                <p id="statusMessage" class="text-xs text-gray-500 dark:text-gray-400"></p>
             </div>
 
             <!-- Current Weight Card -->
-            <div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl shadow-sm border border-indigo-100 p-6 hover:shadow-md transition-shadow">
-                <h3 class="text-sm font-medium text-indigo-900 mb-4">Current Weight</h3>
+            <div class="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-2xl shadow-sm border border-indigo-100 dark:border-indigo-800 p-6 hover:shadow-md transition-all">
+                <h3 class="text-sm font-medium text-indigo-900 dark:text-indigo-300 mb-4">Current Weight</h3>
                 <div class="flex items-baseline gap-2">
-                    <span id="currentWeight" class="text-4xl font-bold text-indigo-600">--</span>
-                    <span class="text-lg text-indigo-400 font-medium">g</span>
+                    <span id="currentWeight" class="text-4xl font-bold text-indigo-600 dark:text-indigo-400">--</span>
+                    <span class="text-lg text-indigo-400 dark:text-indigo-500 font-medium">g</span>
                 </div>
             </div>
 
             <!-- Quick Feed Card -->
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-                <h3 class="text-sm font-medium text-gray-600 mb-4">Quick Feed</h3>
-                <button id="feedButton" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold py-3 px-4 rounded-xl hover:from-indigo-700 hover:to-purple-700 active:scale-95 transition-all duration-200 shadow-lg shadow-indigo-500/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-all">
+                <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-4">Quick Feed</h3>
+                <button id="feedButton" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold py-3 px-4 rounded-xl hover:from-indigo-700 hover:to-purple-700 active:scale-95 transition-all duration-200 shadow-lg shadow-indigo-500/30 dark:shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none">
                     Feed Now
                 </button>
-                <p id="feedMessage" class="text-xs text-gray-600 mt-3 min-h-[1rem]"></p>
+                <p id="feedMessage" class="text-xs text-gray-600 dark:text-gray-400 mt-3 min-h-[1rem]"></p>
             </div>
         </div>
 
         <!-- Configuration Section -->
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-8">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-8 transition-colors">
             <div class="flex items-center justify-between mb-6">
-                <h2 class="text-lg font-semibold text-gray-900">Configuration</h2>
-                <button id="refreshButton" class="text-sm text-gray-600 hover:text-gray-900 font-medium flex items-center gap-2 transition-colors">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Configuration</h2>
+                <button id="refreshButton" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium flex items-center gap-2 transition-colors">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                     </svg>
@@ -94,66 +109,66 @@
 
             <div class="space-y-4">
                 <!-- Hold Duration -->
-                <div class="flex items-center justify-between py-4 border-b border-gray-100 last:border-0">
+                <div class="flex items-center justify-between py-4 border-b border-gray-100 dark:border-gray-700 last:border-0">
                     <div class="flex-1">
-                        <p class="text-sm font-medium text-gray-900">Hold Open Duration</p>
-                        <p class="text-xs text-gray-500 mt-0.5">Time the feeder gate stays open</p>
+                        <p class="text-sm font-medium text-gray-900 dark:text-white">Hold Open Duration</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Time the feeder gate stays open</p>
                     </div>
                     <div class="flex items-center gap-3">
-                        <span id="durationDisplay" class="text-lg font-semibold text-gray-900">Loading...</span>
-                        <input type="number" id="durationInput" class="hidden w-24 px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-indigo-500 focus:border-transparent" min="1000" max="60000" step="500">
-                        <button id="editDurationButton" class="text-xs px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium transition-colors">Edit</button>
+                        <span id="durationDisplay" class="text-lg font-semibold text-gray-900 dark:text-white">Loading...</span>
+                        <input type="number" id="durationInput" class="hidden w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm font-mono focus:ring-2 focus:ring-indigo-500 focus:border-transparent" min="1000" max="60000" step="500">
+                        <button id="editDurationButton" class="text-xs px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 font-medium transition-colors">Edit</button>
                         <button id="saveDurationButton" class="hidden text-xs px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium transition-colors">Save</button>
-                        <button id="cancelDurationButton" class="hidden text-xs px-3 py-1.5 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 font-medium transition-colors">Cancel</button>
+                        <button id="cancelDurationButton" class="hidden text-xs px-3 py-1.5 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 font-medium transition-colors">Cancel</button>
                     </div>
                 </div>
 
                 <!-- Weight Threshold -->
                 <div class="flex items-center justify-between py-4">
                     <div class="flex-1">
-                        <p class="text-sm font-medium text-gray-900">Weight Threshold</p>
-                        <p class="text-xs text-gray-500 mt-0.5">Maximum food weight before denial</p>
+                        <p class="text-sm font-medium text-gray-900 dark:text-white">Weight Threshold</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Maximum food weight before denial</p>
                     </div>
                     <div class="flex items-center gap-3">
-                        <span id="weightThresholdDisplay" class="text-lg font-semibold text-gray-900">Loading...</span>
-                        <input type="number" id="weightThresholdInput" class="hidden w-24 px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-indigo-500 focus:border-transparent" min="50" max="5000" step="50">
-                        <button id="editWeightThresholdButton" class="text-xs px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium transition-colors">Edit</button>
+                        <span id="weightThresholdDisplay" class="text-lg font-semibold text-gray-900 dark:text-white">Loading...</span>
+                        <input type="number" id="weightThresholdInput" class="hidden w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm font-mono focus:ring-2 focus:ring-indigo-500 focus:border-transparent" min="50" max="5000" step="50">
+                        <button id="editWeightThresholdButton" class="text-xs px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 font-medium transition-colors">Edit</button>
                         <button id="saveWeightThresholdButton" class="hidden text-xs px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium transition-colors">Save</button>
-                        <button id="cancelWeightThresholdButton" class="hidden text-xs px-3 py-1.5 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 font-medium transition-colors">Cancel</button>
+                        <button id="cancelWeightThresholdButton" class="hidden text-xs px-3 py-1.5 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 font-medium transition-colors">Cancel</button>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Feeding History Section -->
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-            <h2 class="text-lg font-semibold text-gray-900 mb-6">Feeding History</h2>
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-6">Feeding History</h2>
 
             <div class="overflow-x-auto -mx-6 px-6">
                 <table id="historyTable" class="min-w-full">
                     <thead>
-                        <tr class="border-b border-gray-200">
-                            <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider pb-3">Timestamp</th>
-                            <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider pb-3">Trigger</th>
-                            <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider pb-3">Mode</th>
-                            <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider pb-3">Status</th>
+                        <tr class="border-b border-gray-200 dark:border-gray-700">
+                            <th class="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider pb-3">Timestamp</th>
+                            <th class="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider pb-3">Trigger</th>
+                            <th class="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider pb-3">Mode</th>
+                            <th class="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider pb-3">Status</th>
                         </tr>
                     </thead>
-                    <tbody id="eventsContainer" class="divide-y divide-gray-100">
+                    <tbody id="eventsContainer" class="divide-y divide-gray-100 dark:divide-gray-700">
                         <tr>
-                            <td colspan="4" class="py-8 text-center text-sm text-gray-500" id="loadingEvents">Loading feeding history...</td>
+                            <td colspan="4" class="py-8 text-center text-sm text-gray-500 dark:text-gray-400" id="loadingEvents">Loading feeding history...</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
 
             <!-- Pagination -->
-            <div class="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
-                <button id="prevPageButton" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+            <div class="flex items-center justify-between mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <button id="prevPageButton" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                     Previous
                 </button>
-                <span id="pageInfo" class="text-sm text-gray-700 font-medium">Page 1 of 1</span>
-                <button id="nextPageButton" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                <span id="pageInfo" class="text-sm text-gray-700 dark:text-gray-300 font-medium">Page 1 of 1</span>
+                <button id="nextPageButton" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                     Next
                 </button>
             </div>
@@ -162,9 +177,9 @@
 
     <!-- Modal -->
     <div id="messageModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 hidden p-4">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 transform transition-all">
-            <h3 id="modalTitle" class="text-xl font-semibold text-gray-900 mb-3"></h3>
-            <p id="modalMessage" class="text-sm text-gray-600 mb-6"></p>
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-sm w-full p-6 transform transition-all">
+            <h3 id="modalTitle" class="text-xl font-semibold text-gray-900 dark:text-white mb-3"></h3>
+            <p id="modalMessage" class="text-sm text-gray-600 dark:text-gray-300 mb-6"></p>
             <button id="closeModalButton" class="w-full bg-indigo-600 text-white font-medium py-3 px-4 rounded-xl hover:bg-indigo-700 active:scale-95 transition-all">
                 OK
             </button>

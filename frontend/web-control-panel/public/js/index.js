@@ -15,7 +15,9 @@ const statusMessageElement = document.getElementById('statusMessage');
 const currentWeightElement = document.getElementById('currentWeight');
 const refreshButton = document.getElementById('refreshButton');
 const userNameDisplay = document.getElementById('userNameDisplay');
-const logoutButton = document.getElementById('logoutButton');
+const themeToggleButton = document.getElementById('themeToggleButton');
+const sunIcon = document.getElementById('sunIcon');
+const moonIcon = document.getElementById('moonIcon');
 // --- Configuration Elements ---
 const durationDisplay = document.getElementById('durationDisplay');
 const durationInput = document.getElementById('durationInput');
@@ -44,6 +46,41 @@ let currentUserName = "Guest";
 let statusPollingInterval = null;
 
 // --- Helper Functions ---
+
+function toggleTheme() {
+    const html = document.documentElement;
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+
+    if (newTheme === 'dark') {
+        html.classList.add('dark');
+        sunIcon.classList.remove('hidden');
+        moonIcon.classList.add('hidden');
+    } else {
+        html.classList.remove('dark');
+        sunIcon.classList.add('hidden');
+        moonIcon.classList.remove('hidden');
+    }
+
+    localStorage.setItem('theme', newTheme);
+    console.log(`Theme changed to: ${newTheme}`);
+}
+
+function initializeTheme() {
+    const theme = localStorage.getItem('theme') || 'light';
+    const html = document.documentElement;
+
+    if (theme === 'dark') {
+        html.classList.add('dark');
+        sunIcon.classList.remove('hidden');
+        moonIcon.classList.add('hidden');
+    } else {
+        html.classList.remove('dark');
+        sunIcon.classList.add('hidden');
+        moonIcon.classList.remove('hidden');
+    }
+    console.log(`Theme initialized: ${theme}`);
+}
 
 function toggleWeightThresholdEditMode(isEditing) {
     if (isEditing) {
@@ -454,9 +491,13 @@ refreshButton.addEventListener('click', () => {
     updateDeviceStatus();
 });
 closeModalButton.addEventListener('click', hideModal);
+themeToggleButton.addEventListener('click', toggleTheme);
 
 // Initial load logic for index.html
 document.addEventListener('DOMContentLoaded', async () => {
+    // Initialize theme icons on page load
+    initializeTheme();
+
     // Define amplifyConfig here, within DOMContentLoaded, to ensure window.ENV is available
     const amplifyConfig = {
         Auth: {
@@ -484,12 +525,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Configure Amplify here, after the library is loaded and DOM is ready
     Amplify.configure(amplifyConfig);
     console.log("Amplify configured from index.js DOMContentLoaded.");
-
-    logoutButton.addEventListener('click', () => {
-        sessionStorage.removeItem('guestUserName');
-        sessionStorage.removeItem('authenticatedUserEmail');
-        window.location.href = 'login.html';
-    }); // Attach logout listener here
 
     let userLoggedIn = false;
 
@@ -529,12 +564,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     // If a user is logged in (either authenticated or guest), load app content
     console.log(`User "${currentUserName}" is logged in. Loading app content.`);
 
-    // Validate API_BASE_URL is available
-    if (!API_BASE_URL) {
-        console.error("API_BASE_URL is not configured. Check env-config.js");
-        showModal('Configuration Error', 'API endpoint is not configured. Please contact support.');
+    // Validate API_BASE_URL is available and not a placeholder
+    if (!API_BASE_URL || API_BASE_URL.includes('PLACEHOLDER')) {
+        console.error("API_BASE_URL is not configured properly. Current value:", API_BASE_URL);
+        showModal('Configuration Error', 'API endpoint is not configured. Please check env-config.js file and ensure it has valid values.');
         return;
     }
+
+    console.log("API_BASE_URL validated:", API_BASE_URL);
 
     // Initial load - await all API calls to ensure data loads
     try {

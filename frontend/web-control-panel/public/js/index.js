@@ -498,6 +498,9 @@ async function fetchFeedHistory(page = 1) {
 
         if (data.items && data.items.length > 0) {
             data.items.forEach(event => {
+                // Debug: Log event data to console
+                console.log("Feed event data:", event);
+
                 const row = document.createElement('tr');
                 row.className = 'history-item';
 

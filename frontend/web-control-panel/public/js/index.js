@@ -48,6 +48,7 @@ let currentUserName = "Guest";
 let statusPollingInterval = null;
 let historyPollingInterval = null;
 let isPageVisible = true;
+let aggressivePollingActive = false; // Track if we're in aggressive polling mode
 
 // --- Helper Functions ---
 
@@ -80,28 +81,61 @@ function startPolling() {
     if (statusPollingInterval) clearInterval(statusPollingInterval);
     if (historyPollingInterval) clearInterval(historyPollingInterval);
 
-    console.log("⏰ Starting optimized polling intervals");
-    console.log("   - Device status: every 10 seconds (reduced from 5s)");
-    console.log("   - Feed history: every 60 seconds (reduced from 30s)");
+    console.log("⏰ Starting event-driven polling strategy");
+    console.log("   - Device status: every 3 seconds (real-time feel)");
+    console.log("   - Feed history: every 60 seconds (minimal polling)");
+    console.log("   - Aggressive mode: 1s polling after user actions");
     console.log("   - Polling stops when tab is hidden to save costs");
 
-    // Device status: every 10 seconds (reduced from 5)
-    // This matches better with ESP32 15-min updates
+    // Device status: every 3 seconds for near real-time updates
+    // ESP32 now publishes on events (weight changes, servo state, etc.)
     statusPollingInterval = setInterval(() => {
-        if (isPageVisible) {
+        if (isPageVisible && !aggressivePollingActive) {
             console.log("Auto-refresh: Updating device status...");
             updateDeviceStatus();
         }
-    }, 10000);
+    }, 3000);
 
-    // Feed history: every 60 seconds (reduced from 30)
-    // History doesn't change frequently, so less polling is fine
+    // Feed history: every 60 seconds (minimal polling)
     historyPollingInterval = setInterval(() => {
-        if (isPageVisible) {
+        if (isPageVisible && !aggressivePollingActive) {
             console.log("Auto-refresh: Fetching feed history...");
             fetchFeedHistory(currentPage);
         }
     }, 60000);
+}
+
+// Start aggressive polling after user actions (feed button, config changes)
+function startAggressivePolling(durationSeconds = 15) {
+    console.log(`🚀 Starting aggressive polling for ${durationSeconds} seconds`);
+    aggressivePollingActive = true;
+
+    // Clear existing intervals
+    if (statusPollingInterval) clearInterval(statusPollingInterval);
+    if (historyPollingInterval) clearInterval(historyPollingInterval);
+
+    let pollCount = 0;
+    const maxPolls = durationSeconds;
+
+    // Poll every 1 second for near-instant updates
+    statusPollingInterval = setInterval(() => {
+        if (pollCount < maxPolls && isPageVisible) {
+            console.log(`Aggressive poll ${pollCount + 1}/${maxPolls}`);
+            updateDeviceStatus();
+            pollCount++;
+        } else {
+            console.log("✅ Aggressive polling complete, returning to normal");
+            aggressivePollingActive = false;
+            startPolling(); // Return to normal polling
+        }
+    }, 1000);
+
+    // Also poll history at 5s intervals during aggressive mode
+    historyPollingInterval = setInterval(() => {
+        if (pollCount < maxPolls && isPageVisible) {
+            fetchFeedHistory(currentPage);
+        }
+    }, 5000);
 }
 
 function toggleTheme() {
@@ -212,6 +246,59 @@ function getStatusClass(status) {
         case 'failed': return 'status-failed';
         default: return '';
     }
+}
+
+function getEventTypeDisplay(eventType) {
+    const types = {
+        'manual_feed': { icon: '🍽️', label: 'Manual Feed', color: 'text-blue-600 dark:text-blue-400' },
+        'consumption': { icon: '🐾', label: 'Pet Ate', color: 'text-green-600 dark:text-green-400' },
+        'refill': { icon: '🔄', label: 'Refilled', color: 'text-purple-600 dark:text-purple-400' },
+        'scheduled_feed': { icon: '⏰', label: 'Scheduled', color: 'text-orange-600 dark:text-orange-400' }
+    };
+
+    const type = types[eventType] || { icon: '❓', label: eventType || 'Unknown', color: 'text-gray-600 dark:text-gray-400' };
+    return `<span class="${type.color} flex items-center gap-1"><span>${type.icon}</span><span class="font-medium">${type.label}</span></span>`;
+}
+
+function formatWeightChange(weightBefore, weightAfter, weightDelta) {
+    // If no weight data available
+    if (weightBefore === undefined || weightBefore === null || weightAfter === undefined || weightAfter === null) {
+        return '<span class="text-gray-400 dark:text-gray-500 text-xs">No data</span>';
+    }
+
+    // Calculate delta if not provided
+    const delta = weightDelta !== undefined && weightDelta !== null ? weightDelta : (weightAfter - weightBefore);
+    const deltaAbs = Math.abs(delta);
+
+    // Determine color and icon based on change
+    let icon = '';
+    let colorClass = '';
+
+    if (delta > 0) {
+        // Weight increased (refill)
+        icon = '⬆️';
+        colorClass = 'text-green-600 dark:text-green-400';
+    } else if (delta < 0) {
+        // Weight decreased (consumption)
+        icon = '⬇️';
+        colorClass = 'text-red-600 dark:text-red-400';
+    } else {
+        // No change
+        icon = '➖';
+        colorClass = 'text-gray-400 dark:text-gray-500';
+    }
+
+    return `
+        <div class="flex flex-col gap-0.5">
+            <div class="flex items-center gap-1 ${colorClass}">
+                <span>${icon}</span>
+                <span class="font-semibold">${delta > 0 ? '+' : ''}${delta.toFixed(1)}g</span>
+            </div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">
+                ${weightBefore.toFixed(1)}g → ${weightAfter.toFixed(1)}g
+            </div>
+        </div>
+    `;
 }
 
 /**
@@ -371,29 +458,14 @@ async function sendFeedCommand() {
         feedMessage.textContent = `Command sent! Status: ${data.status.toUpperCase()}`;
         feedMessage.className = "text-sm text-green-600 mt-3 font-semibold";
 
+        // Immediately update status and history
+        updateDeviceStatus();
         setTimeout(() => {
             fetchFeedHistory(1);
-        }, 1500);
+        }, 1000);
 
-        let pollCount = 0;
-        const maxPolls = 5;
-        const pollIntervalMs = 1000;
-
-        if (statusPollingInterval) {
-            clearInterval(statusPollingInterval);
-        }
-
-        statusPollingInterval = setInterval(() => {
-            if (pollCount < maxPolls) {
-                console.log(`Polling status... (${pollCount + 1}/${maxPolls})`);
-                updateDeviceStatus();
-                pollCount++;
-            } else {
-                clearInterval(statusPollingInterval);
-                statusPollingInterval = null;
-                console.log("Status polling finished.");
-            }
-        }, pollIntervalMs);
+        // Start aggressive polling for 20 seconds (feed cycle duration)
+        startAggressivePolling(20);
 
     } catch (error) {
         console.error("Error sending feed command:", error);
@@ -430,10 +502,11 @@ async function fetchFeedHistory(page = 1) {
                 row.className = 'history-item';
 
                 row.innerHTML = `
-                    <td data-label="Timestamp">${formatTimestamp(event.timestamp)}</td>
-                    <td data-label="Trigger">${event.requested_by || 'N/A'}</td>
-                    <td data-label="Mode">${event.mode || 'N/A'}</td>
-                    <td data-label="Status" class="${getStatusClass(event.status)}">${event.status.toUpperCase() || 'N/A'}</td>
+                    <td data-label="Timestamp" class="py-3 text-sm text-gray-900 dark:text-gray-200">${formatTimestamp(event.timestamp)}</td>
+                    <td data-label="Event Type" class="py-3 text-sm">${getEventTypeDisplay(event.event_type)}</td>
+                    <td data-label="Trigger" class="py-3 text-sm text-gray-600 dark:text-gray-400">${event.requested_by || 'N/A'}</td>
+                    <td data-label="Weight Change" class="py-3 text-sm">${formatWeightChange(event.weight_before_g, event.weight_after_g, event.weight_delta_g)}</td>
+                    <td data-label="Status" class="py-3 text-sm"><span class="${getStatusClass(event.status)} px-2 py-1 rounded-full text-xs font-medium">${event.status.toUpperCase() || 'N/A'}</span></td>
                 `;
                 eventsContainer.appendChild(row);
             });
@@ -445,13 +518,13 @@ async function fetchFeedHistory(page = 1) {
             prevPageButton.disabled = currentPage === 1;
             nextPageButton.disabled = currentPage === totalPages || totalPages === 0;
         } else {
-            eventsContainer.innerHTML = `<tr><td colspan="4" class="px-4 py-4 text-center text-gray-500">No feeding events found.</td></tr>`;
+            eventsContainer.innerHTML = `<tr><td colspan="5" class="px-4 py-4 text-center text-gray-500">No feeding events found.</td></tr>`;
             pageInfo.textContent = `Page 0 of 0`;
         }
 
     } catch (error) {
         console.error("Error fetching feed history:", error);
-        eventsContainer.innerHTML = `<tr><td colspan="4" class="px-4 py-4 text-center text-red-600">Error loading history: ${error.message}</td></tr>`;
+        eventsContainer.innerHTML = `<tr><td colspan="5" class="px-4 py-4 text-center text-red-600">Error loading history: ${error.message}</td></tr>`;
         pageInfo.textContent = `Error`;
     }
 }
@@ -575,6 +648,8 @@ saveDurationButton.addEventListener('click', async () => {
     if (success) {
         durationDisplay.textContent = newDuration;
         toggleDurationEditMode(false);
+        // Config changed - poll aggressively to show immediate effect
+        startAggressivePolling(10);
     }
 });
 
@@ -593,6 +668,8 @@ saveWeightThresholdButton.addEventListener('click', async () => {
     if (success) {
         weightThresholdDisplay.textContent = newThreshold;
         toggleWeightThresholdEditMode(false);
+        // Config changed - poll aggressively to show immediate effect
+        startAggressivePolling(10);
     }
 });
 
@@ -786,9 +863,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     startPolling();
 
     console.log("✅ Page initialization complete!");
-    console.log("💡 Cost optimization active:");
+    console.log("💡 Event-driven polling strategy active:");
     console.log("   - Polling pauses when tab is hidden");
-    console.log("   - Device status: 10s intervals (360 req/hr vs old 720)");
-    console.log("   - Feed history: 60s intervals (60 req/hr vs old 120)");
-    console.log("   - Total: ~420 req/hr per active user (50% reduction!)");
+    console.log("   - Device status: 3s intervals for real-time feel (1200 req/hr base)");
+    console.log("   - Aggressive mode: 1s polling for 15-20s after actions");
+    console.log("   - Feed history: 60s intervals (60 req/hr)");
+    console.log("   - ESP32 now publishes on events (weight changes, servo state)");
+    console.log("   - Total: ~1260 req/hr idle, peaks during active use");
 });

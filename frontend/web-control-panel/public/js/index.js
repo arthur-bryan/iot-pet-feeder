@@ -886,9 +886,11 @@ function renderWeightChart(feedEvents, timeRange) {
     const canvas = document.getElementById('weightChart');
     const ctx = canvas.getContext('2d');
 
-    // Filter events with valid weight data
+    // Filter for completed events with weight data
     const eventsWithWeight = feedEvents.filter(event =>
-        event.weight_after_g !== null && event.weight_after_g !== undefined
+        event.status === 'completed' &&
+        event.weight_after_g !== null &&
+        event.weight_after_g !== undefined
     );
 
     // Sort by timestamp

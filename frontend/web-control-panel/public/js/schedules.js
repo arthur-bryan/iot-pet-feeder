@@ -258,26 +258,28 @@ function createScheduleCard(schedule) {
                 </div>
             </div>
 
-            <div class="flex items-center gap-2 ml-4">
+            <div class="flex flex-col sm:flex-row items-end sm:items-center gap-2 ml-2 sm:ml-4">
                 <!-- Toggle Switch -->
                 <button class="toggle-button relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${schedule.enabled ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-gray-600'}" data-schedule-id="${schedule.schedule_id}" data-enabled="${schedule.enabled}">
                     <span class="sr-only">Toggle schedule</span>
                     <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${schedule.enabled ? 'translate-x-6' : 'translate-x-1'}"></span>
                 </button>
 
-                <!-- Edit Button -->
-                <button class="edit-button p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" data-schedule='${JSON.stringify(schedule)}' title="Edit schedule">
-                    <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                    </svg>
-                </button>
+                <div class="flex items-center gap-1">
+                    <!-- Edit Button -->
+                    <button class="edit-button p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" data-schedule='${JSON.stringify(schedule)}' title="Edit schedule">
+                        <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                    </button>
 
-                <!-- Delete Button -->
-                <button class="delete-button p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors" data-schedule-id="${schedule.schedule_id}" title="Delete schedule">
-                    <svg class="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                    </svg>
-                </button>
+                    <!-- Delete Button -->
+                    <button class="delete-button p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors" data-schedule-id="${schedule.schedule_id}" title="Delete schedule">
+                        <svg class="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                    </button>
+                </div>
             </div>
         </div>
     `;

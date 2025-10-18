@@ -513,56 +513,82 @@ async function sendFeedCommand() {
 
 // Function to fetch and display feeding history
 async function fetchFeedHistory(page = 1) {
-    eventsContainer.innerHTML = `<tr><td colspan="4" class="px-4 py-4 text-center text-gray-500" id="loadingEvents">Loading feeding history...</td></tr>`;
+    const mobileContainer = document.getElementById('eventsContainer');
+    const desktopContainer = document.getElementById('eventsContainerDesktop');
+
+    mobileContainer.innerHTML = `<div class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">Loading...</div>`;
+    if (desktopContainer) {
+        desktopContainer.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">Loading...</td></tr>`;
+    }
     pageInfo.textContent = `Loading...`;
     prevPageButton.disabled = true;
     nextPageButton.disabled = true;
 
     try {
-        console.log(`Fetching feed history from: ${API_BASE_URL}/api/v1/feed_history/?page=${page}&limit=${ITEMS_PER_PAGE}`);
         const response = await fetch(`${API_BASE_URL}/api/v1/feed_history/?page=${page}&limit=${ITEMS_PER_PAGE}`);
         if (!response.ok) {
-            const errorText = await response.text();
-            console.error("HTTP error fetching history:", response.status, errorText);
-            throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        console.log("Feed history received:", data);
 
-        eventsContainer.innerHTML = '';
+        mobileContainer.innerHTML = '';
+        if (desktopContainer) desktopContainer.innerHTML = '';
 
         if (data.items && data.items.length > 0) {
             data.items.forEach(event => {
-                // Debug: Log event data to console
-                console.log("Feed event data:", event);
-
-                const row = document.createElement('tr');
-                row.className = 'history-item';
-
-                row.innerHTML = `
-                    <td data-label="Timestamp" class="py-3 text-sm text-gray-900 dark:text-gray-200">${formatTimestamp(event.timestamp)}</td>
-                    <td data-label="Event Type" class="py-3 text-sm">${getEventTypeDisplay(event.event_type)}</td>
-                    <td data-label="Trigger" class="py-3 text-sm text-gray-600 dark:text-gray-400">${event.requested_by || 'N/A'}</td>
-                    <td data-label="Weight Change" class="py-3 text-sm">${formatWeightChange(event.weight_before_g, event.weight_after_g, event.weight_delta_g)}</td>
-                    <td data-label="Status" class="py-3 text-sm"><span class="${getStatusClass(event.status)} px-2 py-1 rounded-full text-xs font-medium">${event.status.toUpperCase() || 'N/A'}</span></td>
+                // Mobile card
+                const card = document.createElement('div');
+                card.className = 'bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 border border-gray-200 dark:border-gray-600';
+                card.innerHTML = `
+                    <div class="flex items-start justify-between mb-2">
+                        <div class="flex-1">
+                            ${getEventTypeDisplay(event.event_type)}
+                        </div>
+                        <span class="${getStatusClass(event.status)} px-2 py-1 rounded-full text-xs font-medium">${event.status.toUpperCase()}</span>
+                    </div>
+                    <div class="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                        ${formatTimestamp(event.timestamp)}
+                    </div>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-gray-500 dark:text-gray-400">${event.requested_by || 'N/A'}</span>
+                        ${formatWeightChange(event.weight_before_g, event.weight_after_g, event.weight_delta_g)}
+                    </div>
                 `;
-                eventsContainer.appendChild(row);
+                mobileContainer.appendChild(card);
+
+                // Desktop row
+                if (desktopContainer) {
+                    const row = document.createElement('tr');
+                    row.className = 'history-item';
+                    row.innerHTML = `
+                        <td class="py-3 text-sm text-gray-900 dark:text-gray-200">${formatTimestamp(event.timestamp)}</td>
+                        <td class="py-3 text-sm">${getEventTypeDisplay(event.event_type)}</td>
+                        <td class="py-3 text-sm text-gray-600 dark:text-gray-400">${event.requested_by || 'N/A'}</td>
+                        <td class="py-3 text-sm">${formatWeightChange(event.weight_before_g, event.weight_after_g, event.weight_delta_g)}</td>
+                        <td class="py-3 text-sm"><span class="${getStatusClass(event.status)} px-2 py-1 rounded-full text-xs font-medium">${event.status.toUpperCase()}</span></td>
+                    `;
+                    desktopContainer.appendChild(row);
+                }
             });
 
             totalPages = data.total_pages;
             currentPage = data.page;
             pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
-
             prevPageButton.disabled = currentPage === 1;
             nextPageButton.disabled = currentPage === totalPages || totalPages === 0;
         } else {
-            eventsContainer.innerHTML = `<tr><td colspan="5" class="px-4 py-4 text-center text-gray-500">No feeding events found.</td></tr>`;
+            mobileContainer.innerHTML = `<div class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">No feeding events found.</div>`;
+            if (desktopContainer) {
+                desktopContainer.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">No feeding events found.</td></tr>`;
+            }
             pageInfo.textContent = `Page 0 of 0`;
         }
-
     } catch (error) {
         console.error("Error fetching feed history:", error);
-        eventsContainer.innerHTML = `<tr><td colspan="5" class="px-4 py-4 text-center text-red-600">Error loading history: ${error.message}</td></tr>`;
+        mobileContainer.innerHTML = `<div class="py-8 text-center text-sm text-red-600 dark:text-red-400">Error: ${error.message}</div>`;
+        if (desktopContainer) {
+            desktopContainer.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-sm text-red-600 dark:text-red-400">Error: ${error.message}</td></tr>`;
+        }
         pageInfo.textContent = `Error`;
     }
 }

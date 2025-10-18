@@ -807,6 +807,343 @@ settingsToggleButton.addEventListener('click', toggleSettingsDropdown);
 // Close dropdown when clicking outside
 document.addEventListener('click', closeSettingsDropdown);
 
+// --- Chart View Functionality ---
+
+let weightChart = null;
+let currentView = 'table'; // 'table' or 'chart'
+let currentTimeInterval = '24h';
+
+const viewTypeSelect = document.getElementById('viewTypeSelect');
+const prevViewButton = document.getElementById('prevViewButton');
+const nextViewButton = document.getElementById('nextViewButton');
+const tableViewContainer = document.getElementById('tableViewContainer');
+const chartViewContainer = document.getElementById('chartViewContainer');
+const timeRangeFilters = document.getElementById('timeRangeFilters');
+const timeIntervalButtons = document.querySelectorAll('.time-interval-btn');
+const customStartTime = document.getElementById('customStartTime');
+const customEndTime = document.getElementById('customEndTime');
+const applyCustomRange = document.getElementById('applyCustomRange');
+
+function switchView(newView) {
+    currentView = newView;
+    viewTypeSelect.value = newView;
+
+    if (newView === 'table') {
+        tableViewContainer.classList.remove('hidden');
+        chartViewContainer.classList.add('hidden');
+        timeRangeFilters.classList.add('hidden');
+        fetchFeedHistory(currentPage);
+    } else if (newView === 'chart') {
+        tableViewContainer.classList.add('hidden');
+        chartViewContainer.classList.remove('hidden');
+        timeRangeFilters.classList.remove('hidden');
+        loadChartData(currentTimeInterval);
+    }
+}
+
+function getTimeRange(interval) {
+    const now = new Date();
+    const start = new Date();
+
+    switch(interval) {
+        case '1h':
+            start.setHours(now.getHours() - 1);
+            break;
+        case '6h':
+            start.setHours(now.getHours() - 6);
+            break;
+        case '12h':
+            start.setHours(now.getHours() - 12);
+            break;
+        case '24h':
+            start.setDate(now.getDate() - 1);
+            break;
+        case '3d':
+            start.setDate(now.getDate() - 3);
+            break;
+        case '7d':
+            start.setDate(now.getDate() - 7);
+            break;
+        case '14d':
+            start.setDate(now.getDate() - 14);
+            break;
+        case '30d':
+            start.setDate(now.getDate() - 30);
+            break;
+        case '3m':
+            start.setMonth(now.getMonth() - 3);
+            break;
+        default:
+            start.setDate(now.getDate() - 1);
+    }
+
+    return {
+        start: start.toISOString(),
+        end: now.toISOString()
+    };
+}
+
+async function loadChartData(interval, customRange = null) {
+    const chartLoadingMessage = document.getElementById('chartLoadingMessage');
+    chartLoadingMessage.classList.remove('hidden');
+
+    try {
+        let url;
+        if (customRange) {
+            url = `${API_BASE_URL}/api/v1/feed_history/?start_time=${encodeURIComponent(customRange.start)}&end_time=${encodeURIComponent(customRange.end)}&limit=1000`;
+        } else {
+            const timeRange = getTimeRange(interval);
+            url = `${API_BASE_URL}/api/v1/feed_history/?start_time=${encodeURIComponent(timeRange.start)}&end_time=${encodeURIComponent(timeRange.end)}&limit=1000`;
+        }
+
+        console.log('Fetching chart data from:', url);
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('Chart data received:', data);
+
+        renderWeightChart(data.items || []);
+    } catch (error) {
+        console.error('Error loading chart data:', error);
+        showModal('Chart Error', `Failed to load chart data: ${error.message}`);
+    } finally {
+        chartLoadingMessage.classList.add('hidden');
+    }
+}
+
+function renderWeightChart(feedEvents) {
+    const canvas = document.getElementById('weightChart');
+    const ctx = canvas.getContext('2d');
+
+    // Filter events with valid weight data
+    const eventsWithWeight = feedEvents.filter(event =>
+        event.weight_after_g !== null && event.weight_after_g !== undefined
+    );
+
+    // Sort by timestamp
+    eventsWithWeight.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+    // Prepare data points
+    const dataPoints = eventsWithWeight.map(event => ({
+        x: new Date(event.timestamp),
+        y: event.weight_after_g,
+        eventType: event.event_type,
+        status: event.status
+    }));
+
+    // Get theme colors
+    const isDark = document.documentElement.classList.contains('dark');
+    const gridColor = isDark ? 'rgba(75, 85, 99, 0.3)' : 'rgba(229, 231, 235, 0.8)';
+    const textColor = isDark ? 'rgba(156, 163, 175, 1)' : 'rgba(75, 85, 99, 1)';
+    const lineColor = isDark ? 'rgba(99, 102, 241, 1)' : 'rgba(79, 70, 229, 1)';
+
+    // Destroy existing chart
+    if (weightChart) {
+        weightChart.destroy();
+    }
+
+    // Create new chart
+    weightChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            datasets: [{
+                label: 'Food Weight (g)',
+                data: dataPoints,
+                borderColor: lineColor,
+                backgroundColor: isDark ? 'rgba(99, 102, 241, 0.1)' : 'rgba(79, 70, 229, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                pointBackgroundColor: lineColor,
+                pointBorderColor: isDark ? '#1f2937' : '#ffffff',
+                pointBorderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'nearest',
+                axis: 'x',
+                intersect: false
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    labels: {
+                        color: textColor,
+                        font: {
+                            family: 'Inter',
+                            size: 12
+                        }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: isDark ? 'rgba(31, 41, 55, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                    titleColor: isDark ? '#f9fafb' : '#111827',
+                    bodyColor: isDark ? '#d1d5db' : '#374151',
+                    borderColor: isDark ? 'rgba(75, 85, 99, 0.5)' : 'rgba(229, 231, 235, 0.8)',
+                    borderWidth: 1,
+                    padding: 12,
+                    displayColors: true,
+                    callbacks: {
+                        title: function(context) {
+                            const date = new Date(context[0].parsed.x);
+                            return formatTimestamp(date.toISOString());
+                        },
+                        label: function(context) {
+                            const point = context.raw;
+                            return [
+                                `Weight: ${point.y.toFixed(1)}g`,
+                                `Event: ${point.eventType || 'N/A'}`,
+                                `Status: ${point.status || 'N/A'}`
+                            ];
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    type: 'time',
+                    time: {
+                        displayFormats: {
+                            hour: 'MMM d, HH:mm',
+                            day: 'MMM d',
+                            week: 'MMM d',
+                            month: 'MMM yyyy'
+                        }
+                    },
+                    grid: {
+                        color: gridColor
+                    },
+                    ticks: {
+                        color: textColor,
+                        font: {
+                            family: 'Inter',
+                            size: 11
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Time',
+                        color: textColor,
+                        font: {
+                            family: 'Inter',
+                            size: 12,
+                            weight: '500'
+                        }
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: gridColor
+                    },
+                    ticks: {
+                        color: textColor,
+                        font: {
+                            family: 'Inter',
+                            size: 11
+                        },
+                        callback: function(value) {
+                            return value + 'g';
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Weight (grams)',
+                        color: textColor,
+                        font: {
+                            family: 'Inter',
+                            size: 12,
+                            weight: '500'
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    console.log(`Chart rendered with ${dataPoints.length} data points`);
+}
+
+// Event listeners for view controls
+viewTypeSelect.addEventListener('change', (e) => {
+    switchView(e.target.value);
+});
+
+prevViewButton.addEventListener('click', () => {
+    switchView(currentView === 'table' ? 'chart' : 'table');
+});
+
+nextViewButton.addEventListener('click', () => {
+    switchView(currentView === 'table' ? 'chart' : 'table');
+});
+
+// Time interval buttons
+timeIntervalButtons.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        // Remove active class from all buttons
+        timeIntervalButtons.forEach(b => {
+            b.classList.remove('bg-indigo-600', 'text-white');
+            b.classList.add('border-gray-300', 'dark:border-gray-600');
+        });
+
+        // Add active class to clicked button
+        e.target.classList.add('bg-indigo-600', 'text-white');
+        e.target.classList.remove('border-gray-300', 'dark:border-gray-600');
+
+        currentTimeInterval = e.target.dataset.interval;
+        loadChartData(currentTimeInterval);
+    });
+});
+
+// Custom time range
+applyCustomRange.addEventListener('click', () => {
+    const startValue = customStartTime.value;
+    const endValue = customEndTime.value;
+
+    if (!startValue || !endValue) {
+        showModal('Invalid Range', 'Please select both start and end times.');
+        return;
+    }
+
+    const start = new Date(startValue);
+    const end = new Date(endValue);
+
+    if (start >= end) {
+        showModal('Invalid Range', 'Start time must be before end time.');
+        return;
+    }
+
+    // Clear interval button selection
+    timeIntervalButtons.forEach(b => {
+        b.classList.remove('bg-indigo-600', 'text-white');
+        b.classList.add('border-gray-300', 'dark:border-gray-600');
+    });
+
+    loadChartData(null, {
+        start: start.toISOString(),
+        end: end.toISOString()
+    });
+});
+
+// Update chart theme when theme changes
+const originalToggleTheme = toggleTheme;
+toggleTheme = function() {
+    originalToggleTheme();
+    // Re-render chart if in chart view to update colors
+    if (currentView === 'chart' && weightChart) {
+        loadChartData(currentTimeInterval);
+    }
+};
+
 // Initial load logic for index.html
 document.addEventListener('DOMContentLoaded', async () => {
     console.log("=== DOMContentLoaded event fired ===");

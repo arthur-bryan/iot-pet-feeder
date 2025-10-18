@@ -7,6 +7,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <script>
         // Initialize theme before page renders to prevent flash
         (function() {
@@ -185,42 +187,114 @@
 
         <!-- Feeding History Section -->
         <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6 transition-colors">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 sm:mb-6">Feeding History</h2>
+            <!-- Header with View Controls -->
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 sm:mb-6">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Feeding History</h2>
 
-            <!-- Mobile Card View -->
-            <div id="eventsContainer" class="block md:hidden space-y-3">
-                <div class="py-8 text-center text-sm text-gray-500 dark:text-gray-400" id="loadingEvents">Loading feeding history...</div>
+                <!-- View Switcher -->
+                <div class="flex items-center gap-3">
+                    <!-- View Type Dropdown -->
+                    <select id="viewTypeSelect" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        <option value="table">Table View</option>
+                        <option value="chart">Weight Chart</option>
+                    </select>
+
+                    <!-- Arrow Navigation -->
+                    <div class="flex items-center gap-1">
+                        <button id="prevViewButton" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" title="Previous view">
+                            <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                            </svg>
+                        </button>
+                        <button id="nextViewButton" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" title="Next view">
+                            <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
             </div>
 
-            <!-- Desktop Table View -->
-            <div class="hidden md:block overflow-x-auto -mx-6 px-6">
-                <table id="historyTable" class="min-w-full">
-                    <thead>
-                        <tr class="border-b border-gray-200 dark:border-gray-700">
-                            <th class="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider pb-3">Timestamp</th>
-                            <th class="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider pb-3">Event Type</th>
-                            <th class="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider pb-3">Trigger</th>
-                            <th class="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider pb-3">Weight Change</th>
-                            <th class="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider pb-3">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="eventsContainerDesktop" class="divide-y divide-gray-100 dark:divide-gray-700">
-                        <tr>
-                            <td colspan="5" class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">Loading feeding history...</td>
-                        </tr>
-                    </tbody>
-                </table>
+            <!-- Time Range Filters (visible only in chart view) -->
+            <div id="timeRangeFilters" class="hidden mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+                <!-- Quick Time Intervals -->
+                <div class="flex flex-wrap gap-2 mb-3">
+                    <button data-interval="1h" class="time-interval-btn px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">1h</button>
+                    <button data-interval="6h" class="time-interval-btn px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">6h</button>
+                    <button data-interval="12h" class="time-interval-btn px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">12h</button>
+                    <button data-interval="24h" class="time-interval-btn px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors bg-indigo-600 text-white">24h</button>
+                    <button data-interval="3d" class="time-interval-btn px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">3d</button>
+                    <button data-interval="7d" class="time-interval-btn px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">7d</button>
+                    <button data-interval="14d" class="time-interval-btn px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">14d</button>
+                    <button data-interval="30d" class="time-interval-btn px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">30d</button>
+                    <button data-interval="3m" class="time-interval-btn px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">3m</button>
+                </div>
+
+                <!-- Custom Time Range -->
+                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                    <span class="text-xs font-medium text-gray-700 dark:text-gray-300">Custom Range:</span>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <input type="datetime-local" id="customStartTime" class="px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        <span class="text-xs text-gray-500 dark:text-gray-400">to</span>
+                        <input type="datetime-local" id="customEndTime" class="px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        <button id="applyCustomRange" class="px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">Apply</button>
+                    </div>
+                </div>
             </div>
 
-            <!-- Pagination -->
-            <div class="flex items-center justify-between mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <button id="prevPageButton" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-                    Previous
-                </button>
-                <span id="pageInfo" class="text-sm text-gray-700 dark:text-gray-300 font-medium">Page 1 of 1</span>
-                <button id="nextPageButton" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-                    Next
-                </button>
+            <!-- Table View Container -->
+            <div id="tableViewContainer">
+                <!-- Mobile Card View -->
+                <div id="eventsContainer" class="block md:hidden space-y-3">
+                    <div class="py-8 text-center text-sm text-gray-500 dark:text-gray-400" id="loadingEvents">Loading feeding history...</div>
+                </div>
+
+                <!-- Desktop Table View -->
+                <div class="hidden md:block overflow-x-auto -mx-6 px-6">
+                    <table id="historyTable" class="min-w-full">
+                        <thead>
+                            <tr class="border-b border-gray-200 dark:border-gray-700">
+                                <th class="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider pb-3">Timestamp</th>
+                                <th class="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider pb-3">Event Type</th>
+                                <th class="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider pb-3">Trigger</th>
+                                <th class="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider pb-3">Weight Change</th>
+                                <th class="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider pb-3">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="eventsContainerDesktop" class="divide-y divide-gray-100 dark:divide-gray-700">
+                            <tr>
+                                <td colspan="5" class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">Loading feeding history...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="flex items-center justify-between mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <button id="prevPageButton" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                        Previous
+                    </button>
+                    <span id="pageInfo" class="text-sm text-gray-700 dark:text-gray-300 font-medium">Page 1 of 1</span>
+                    <button id="nextPageButton" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                        Next
+                    </button>
+                </div>
+            </div>
+
+            <!-- Chart View Container -->
+            <div id="chartViewContainer" class="hidden">
+                <div class="relative h-[400px] sm:h-[500px]">
+                    <canvas id="weightChart"></canvas>
+                </div>
+                <div id="chartLoadingMessage" class="hidden absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+                    <div class="text-center">
+                        <svg class="animate-spin h-8 w-8 text-indigo-600 mx-auto mb-2" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Loading chart data...</p>
+                    </div>
+                </div>
             </div>
         </div>
     </main>

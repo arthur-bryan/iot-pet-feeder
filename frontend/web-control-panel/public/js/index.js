@@ -593,41 +593,8 @@ async function fetchFeedHistory(page = 1) {
     }
 }
 
-// Function to request real-time device status from ESP32
-async function requestRealtimeStatus() {
-    try {
-        console.log(`Requesting real-time status from: ${API_BASE_URL}/status/request`);
-
-        const response = await fetch(`${API_BASE_URL}/status/request`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error("Real-time status request failed:", response.status, errorText);
-            throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
-        }
-
-        const data = await response.json();
-        console.log("Real-time status response:", data);
-
-        if (data.status) {
-            updateStatusUI(data.status);
-            return data.status;
-        } else {
-            console.warn("Device may be offline - no status received");
-            // Try to get cached status as fallback
-            return await getCachedStatus();
-        }
-    } catch (error) {
-        console.error("Error requesting real-time status:", error);
-        // Fallback to cached status
-        return await getCachedStatus();
-    }
-}
+// [REMOVED] requestRealtimeStatus - unused endpoint causing 403 errors
+// Frontend now relies on getCachedStatus which polls ESP32 shadow state every 3s
 
 // Function to get cached device status from DynamoDB
 async function getCachedStatus() {
@@ -784,12 +751,11 @@ refreshButton.addEventListener('click', async () => {
 
     try {
         // Fetch all data in parallel
-        // Use requestRealtimeStatus() instead of updateDeviceStatus() for real-time data
         await Promise.all([
             fetchServoDuration(),
             fetchWeightThreshold(),
             fetchFeedHistory(1),
-            requestRealtimeStatus()
+            getCachedStatus()
         ]);
         console.log("✅ Manual refresh completed successfully!");
     } catch (error) {
@@ -888,11 +854,12 @@ async function loadChartData(interval, customRange = null) {
     chartLoadingMessage.classList.remove('hidden');
 
     try {
-        let url;
+        let url, timeRange;
         if (customRange) {
             url = `${API_BASE_URL}/api/v1/feed_history/?start_time=${encodeURIComponent(customRange.start)}&end_time=${encodeURIComponent(customRange.end)}&limit=1000`;
+            timeRange = customRange;
         } else {
-            const timeRange = getTimeRange(interval);
+            timeRange = getTimeRange(interval);
             url = `${API_BASE_URL}/api/v1/feed_history/?start_time=${encodeURIComponent(timeRange.start)}&end_time=${encodeURIComponent(timeRange.end)}&limit=1000`;
         }
 
@@ -906,7 +873,7 @@ async function loadChartData(interval, customRange = null) {
         const data = await response.json();
         console.log('Chart data received:', data);
 
-        renderWeightChart(data.items || []);
+        renderWeightChart(data.items || [], timeRange);
     } catch (error) {
         console.error('Error loading chart data:', error);
         showModal('Chart Error', `Failed to load chart data: ${error.message}`);
@@ -915,7 +882,7 @@ async function loadChartData(interval, customRange = null) {
     }
 }
 
-function renderWeightChart(feedEvents) {
+function renderWeightChart(feedEvents, timeRange) {
     const canvas = document.getElementById('weightChart');
     const ctx = canvas.getContext('2d');
 
@@ -1011,6 +978,8 @@ function renderWeightChart(feedEvents) {
             scales: {
                 x: {
                     type: 'time',
+                    min: new Date(timeRange.start),
+                    max: new Date(timeRange.end),
                     time: {
                         displayFormats: {
                             hour: 'MMM d, HH:mm',
@@ -1270,7 +1239,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             fetchServoDuration(),
             fetchWeightThreshold(),
             fetchFeedHistory(1),
-            requestRealtimeStatus()  // Request real-time status on initial load
+            getCachedStatus()
         ]);
         console.log("✅ Initial data loaded successfully!");
     } catch (error) {

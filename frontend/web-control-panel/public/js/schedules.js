@@ -14,6 +14,7 @@ const addScheduleButton = document.getElementById('addScheduleButton');
 const themeToggleButton = document.getElementById('themeToggleButton');
 const sunIcon = document.getElementById('sunIcon');
 const moonIcon = document.getElementById('moonIcon');
+const timezoneLabel = document.getElementById('timezoneLabel');
 
 // --- Modal Elements ---
 const scheduleModal = document.getElementById('scheduleModal');
@@ -78,13 +79,8 @@ function initializeTheme() {
 
 function formatDateTime(isoString) {
     try {
-        const date = new Date(isoString);
-        const options = {
-            year: 'numeric', month: 'short', day: 'numeric',
-            hour: '2-digit', minute: '2-digit',
-            hour12: false
-        };
-        return date.toLocaleString(undefined, options);
+        // Use timezone utility function from timezone-utils.js
+        return formatInUserTimezone(isoString, 'datetime');
     } catch (e) {
         console.error("Error formatting datetime:", isoString, e);
         return isoString;
@@ -106,13 +102,10 @@ function showScheduleModal(scheduleData = null) {
         modalTitle.textContent = 'Edit Schedule';
         editingScheduleId = scheduleData.schedule_id;
 
-        // Parse ISO datetime
-        const datetime = new Date(scheduleData.scheduled_time);
-        const dateStr = datetime.toISOString().split('T')[0];
-        const timeStr = datetime.toISOString().split('T')[1].substring(0, 5);
-
-        scheduleDate.value = dateStr;
-        scheduleTime.value = timeStr;
+        // Convert UTC time to user's timezone
+        const localDateTime = getLocalDateTimeFromUTC(scheduleData.scheduled_time);
+        scheduleDate.value = localDateTime.date;
+        scheduleTime.value = localDateTime.time;
         feedCycles.value = scheduleData.feed_cycles;
         recurrence.value = scheduleData.recurrence;
     } else {
@@ -121,9 +114,11 @@ function showScheduleModal(scheduleData = null) {
         editingScheduleId = null;
         scheduleForm.reset();
 
-        // Set default date to today
-        const today = new Date();
-        scheduleDate.value = today.toISOString().split('T')[0];
+        // Set default date/time to current time in user's timezone
+        const now = new Date();
+        const localDateTime = getLocalDateTimeFromUTC(now.toISOString());
+        scheduleDate.value = localDateTime.date;
+        scheduleTime.value = localDateTime.time;
         feedCycles.value = 1;
     }
 
@@ -420,10 +415,10 @@ themeToggleButton.addEventListener('click', toggleTheme);
 scheduleForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    // Build ISO 8601 datetime string
+    // Convert user's local time to UTC
     const dateValue = scheduleDate.value;
     const timeValue = scheduleTime.value;
-    const scheduledTime = `${dateValue}T${timeValue}:00Z`;
+    const scheduledTime = convertToUTC(dateValue, timeValue);
 
     const scheduleData = {
         scheduled_time: scheduledTime,
@@ -472,6 +467,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log("=== Schedules Page DOMContentLoaded ===");
 
     initializeTheme();
+
+    // Update timezone label to show user's selected timezone
+    if (timezoneLabel) {
+        const tzDisplay = getTimezoneDisplay();
+        timezoneLabel.textContent = `(${tzDisplay})`;
+        console.log(`Timezone label updated: ${tzDisplay}`);
+    }
 
     // Validate API_BASE_URL
     if (!API_BASE_URL || API_BASE_URL.includes('PLACEHOLDER')) {

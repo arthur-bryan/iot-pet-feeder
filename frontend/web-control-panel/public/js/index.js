@@ -31,6 +31,11 @@ const weightThresholdInput = document.getElementById('weightThresholdInput');
 const editWeightThresholdButton = document.getElementById('editWeightThresholdButton');
 const saveWeightThresholdButton = document.getElementById('saveWeightThresholdButton');
 const cancelWeightThresholdButton = document.getElementById('cancelWeightThresholdButton');
+const timezoneDisplay = document.getElementById('timezoneDisplay');
+const timezoneSelect = document.getElementById('timezoneSelect');
+const editTimezoneButton = document.getElementById('editTimezoneButton');
+const saveTimezoneButton = document.getElementById('saveTimezoneButton');
+const cancelTimezoneButton = document.getElementById('cancelTimezoneButton');
 // --- END Configuration Elements ---
 
 
@@ -183,6 +188,24 @@ function initializeTheme() {
     console.log(`Theme initialized: ${theme}`);
 }
 
+function initializeTimezonePicker() {
+    // Populate timezone select with options from COMMON_TIMEZONES (defined in timezone-utils.js)
+    timezoneSelect.innerHTML = '';
+    COMMON_TIMEZONES.forEach(tz => {
+        const option = document.createElement('option');
+        option.value = tz.value;
+        option.textContent = tz.label;
+        timezoneSelect.appendChild(option);
+    });
+
+    // Set current timezone
+    const currentTz = getUserTimezone();
+    timezoneSelect.value = currentTz;
+    timezoneDisplay.textContent = getTimezoneDisplay();
+
+    console.log(`Timezone picker initialized: ${currentTz}`);
+}
+
 function toggleWeightThresholdEditMode(isEditing) {
     const weightUnit = weightThresholdDisplay.nextElementSibling; // Get the "g" label
     if (isEditing) {
@@ -223,15 +246,27 @@ function toggleDurationEditMode(isEditing) {
     }
 }
 
+function toggleTimezoneEditMode(isEditing) {
+    if (isEditing) {
+        timezoneDisplay.classList.add('hidden');
+        timezoneSelect.classList.remove('hidden');
+        editTimezoneButton.classList.add('hidden');
+        saveTimezoneButton.classList.remove('hidden');
+        cancelTimezoneButton.classList.remove('hidden');
+        timezoneSelect.focus();
+    } else {
+        timezoneDisplay.classList.remove('hidden');
+        timezoneSelect.classList.add('hidden');
+        editTimezoneButton.classList.remove('hidden');
+        saveTimezoneButton.classList.add('hidden');
+        cancelTimezoneButton.classList.add('hidden');
+    }
+}
+
 function formatTimestamp(isoString) {
     try {
-        const date = new Date(isoString);
-        const options = {
-            year: 'numeric', month: 'short', day: 'numeric',
-            hour: '2-digit', minute: '2-digit', second: '2-digit',
-            hour12: false
-        };
-        return date.toLocaleString(undefined, options);
+        // Use timezone utility function from timezone-utils.js
+        return formatInUserTimezone(isoString, 'datetime');
     } catch (e) {
         console.error("Error formatting timestamp:", isoString, e);
         return isoString;
@@ -676,6 +711,28 @@ saveWeightThresholdButton.addEventListener('click', async () => {
     }
 });
 
+editTimezoneButton.addEventListener('click', () => {
+    toggleTimezoneEditMode(true);
+});
+
+cancelTimezoneButton.addEventListener('click', () => {
+    // Reset select to current timezone
+    timezoneSelect.value = getUserTimezone();
+    toggleTimezoneEditMode(false);
+});
+
+saveTimezoneButton.addEventListener('click', () => {
+    const selectedTimezone = timezoneSelect.value;
+    setUserTimezone(selectedTimezone);
+    timezoneDisplay.textContent = getTimezoneDisplay();
+    toggleTimezoneEditMode(false);
+
+    // Refresh feed history to display times in new timezone
+    fetchFeedHistory(currentPage);
+
+    showModal('Success', `Timezone updated to ${selectedTimezone}. All times are now displayed in your selected timezone.`);
+});
+
 feedButton.addEventListener('click', sendFeedCommand);
 prevPageButton.addEventListener('click', () => {
     if (currentPage > 1) {
@@ -730,6 +787,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Initialize theme icons on page load
     initializeTheme();
+
+    // Initialize timezone picker
+    initializeTimezonePicker();
 
     // Check if Amplify is loaded
     if (typeof Amplify === 'undefined') {

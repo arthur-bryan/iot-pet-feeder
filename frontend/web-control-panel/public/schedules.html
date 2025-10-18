@@ -129,7 +129,7 @@
 
                 <!-- Time Input -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Time (UTC)</label>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Time <span id="timezoneLabel" class="text-xs text-gray-500">(loading...)</span></label>
                     <input type="time" id="scheduleTime" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                 </div>
 
@@ -182,6 +182,7 @@
     <!-- Scripts -->
     <script src="env-config.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/aws-amplify/3.3.9-sdk-bump.15/aws-amplify.min.js"></script>
+    <script src="js/timezone-utils.js"></script>
     <script src="js/schedules.js"></script>
 </body>
 </html>

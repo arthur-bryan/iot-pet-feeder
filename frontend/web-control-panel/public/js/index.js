@@ -1170,8 +1170,49 @@ function renderWeightChart(feedEvents, timeRange) {
     // Sort by timestamp
     eventsWithWeight.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-    // Prepare data points
-    const dataPoints = eventsWithWeight.map(event => ({
+    // Include boundary points: find one event before and one after the time range
+    // This ensures the chart lines extend to the edges properly without being cut off
+    const rangeStart = new Date(timeRange.start);
+    const rangeEnd = new Date(timeRange.end);
+
+    // Find the last event before the range starts
+    let beforeEvent = null;
+    for (let i = eventsWithWeight.length - 1; i >= 0; i--) {
+        if (new Date(eventsWithWeight[i].timestamp) < rangeStart) {
+            beforeEvent = eventsWithWeight[i];
+            break;
+        }
+    }
+
+    // Find the first event after the range ends
+    let afterEvent = null;
+    for (let i = 0; i < eventsWithWeight.length; i++) {
+        if (new Date(eventsWithWeight[i].timestamp) > rangeEnd) {
+            afterEvent = eventsWithWeight[i];
+            break;
+        }
+    }
+
+    // Filter events within range and add boundary points
+    let eventsToDisplay = eventsWithWeight.filter(event => {
+        const eventTime = new Date(event.timestamp);
+        return eventTime >= rangeStart && eventTime <= rangeEnd;
+    });
+
+    // Add boundary points if they exist
+    if (beforeEvent) {
+        eventsToDisplay = [beforeEvent, ...eventsToDisplay];
+        console.log('Added boundary point before range:', beforeEvent.timestamp);
+    }
+    if (afterEvent) {
+        eventsToDisplay = [...eventsToDisplay, afterEvent];
+        console.log('Added boundary point after range:', afterEvent.timestamp);
+    }
+
+    console.log('Events to display (with boundaries):', eventsToDisplay.length);
+
+    // Prepare data points from the filtered events (including boundary points)
+    const dataPoints = eventsToDisplay.map(event => ({
         x: new Date(event.timestamp),
         y: event.weight_after_g,
         eventType: event.event_type,
@@ -1180,6 +1221,7 @@ function renderWeightChart(feedEvents, timeRange) {
 
     console.log('Data points prepared:', dataPoints.length);
     console.log('First 3 data points:', dataPoints.slice(0, 3));
+    console.log('Last 3 data points:', dataPoints.slice(-3));
 
     // Get theme colors
     const isDark = document.documentElement.classList.contains('dark');

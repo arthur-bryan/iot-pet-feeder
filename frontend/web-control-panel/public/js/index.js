@@ -1002,9 +1002,6 @@ function getTimeRange(interval) {
     const start = new Date();
 
     switch(interval) {
-        case '1h':
-            start.setHours(now.getHours() - 1);
-            break;
         case '6h':
             start.setHours(now.getHours() - 6);
             break;
@@ -1014,20 +1011,17 @@ function getTimeRange(interval) {
         case '24h':
             start.setDate(now.getDate() - 1);
             break;
-        case '3d':
-            start.setDate(now.getDate() - 3);
+        case '48h':
+            start.setDate(now.getDate() - 2);
             break;
         case '7d':
             start.setDate(now.getDate() - 7);
             break;
-        case '14d':
-            start.setDate(now.getDate() - 14);
-            break;
         case '30d':
             start.setDate(now.getDate() - 30);
             break;
-        case '3m':
-            start.setMonth(now.getMonth() - 3);
+        case '90d':
+            start.setDate(now.getDate() - 90);
             break;
         default:
             start.setDate(now.getDate() - 1);
@@ -1164,9 +1158,10 @@ function renderWeightChart(feedEvents, timeRange) {
                 backgroundColor: isDark ? 'rgba(99, 102, 241, 0.1)' : 'rgba(79, 70, 229, 0.1)',
                 borderWidth: 2,
                 fill: true,
-                tension: 0.4,
-                pointRadius: 4,
-                pointHoverRadius: 6,
+                stepped: 'after',  // Stepped line chart - weight changes are instantaneous
+                tension: 0,  // No curve - straight lines
+                pointRadius: 5,
+                pointHoverRadius: 7,
                 pointBackgroundColor: lineColor,
                 pointBorderColor: isDark ? '#1f2937' : '#ffffff',
                 pointBorderWidth: 2

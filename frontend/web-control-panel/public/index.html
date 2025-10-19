@@ -142,6 +142,34 @@
                                         <button id="cancelTimezoneButton" class="hidden text-xs px-3 py-1.5 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 font-medium transition-colors">Cancel</button>
                                     </div>
                                 </div>
+
+                                <!-- Email Notifications -->
+                                <div class="space-y-2 pt-4 border-t border-gray-200 dark:border-gray-700">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex-1">
+                                            <p class="text-sm font-medium text-gray-900 dark:text-white">Email Notifications</p>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Alerts for feed success/failure</p>
+                                        </div>
+                                    </div>
+                                    <!-- Enable/Disable Toggle -->
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-sm text-gray-700 dark:text-gray-300">Enable Notifications</span>
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" id="emailNotificationsToggle" class="sr-only peer">
+                                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
+                                        </label>
+                                    </div>
+                                    <!-- Email Input -->
+                                    <div class="flex flex-col gap-2">
+                                        <span id="emailDisplay" class="text-base font-semibold text-gray-900 dark:text-white">Not configured</span>
+                                        <input type="email" id="emailInput" class="hidden px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="your@email.com">
+                                        <div class="flex gap-2">
+                                            <button id="editEmailButton" class="text-xs px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 font-medium transition-colors">Edit</button>
+                                            <button id="saveEmailButton" class="hidden text-xs px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium transition-colors">Save</button>
+                                            <button id="cancelEmailButton" class="hidden text-xs px-3 py-1.5 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 font-medium transition-colors">Cancel</button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

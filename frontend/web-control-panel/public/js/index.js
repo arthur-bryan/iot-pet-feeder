@@ -36,6 +36,12 @@ const timezoneSelect = document.getElementById('timezoneSelect');
 const editTimezoneButton = document.getElementById('editTimezoneButton');
 const saveTimezoneButton = document.getElementById('saveTimezoneButton');
 const cancelTimezoneButton = document.getElementById('cancelTimezoneButton');
+const emailNotificationsToggle = document.getElementById('emailNotificationsToggle');
+const emailDisplay = document.getElementById('emailDisplay');
+const emailInput = document.getElementById('emailInput');
+const editEmailButton = document.getElementById('editEmailButton');
+const saveEmailButton = document.getElementById('saveEmailButton');
+const cancelEmailButton = document.getElementById('cancelEmailButton');
 // --- END Configuration Elements ---
 
 
@@ -263,6 +269,23 @@ function toggleTimezoneEditMode(isEditing) {
     }
 }
 
+function toggleEmailEditMode(isEditing) {
+    if (isEditing) {
+        emailDisplay.classList.add('hidden');
+        emailInput.classList.remove('hidden');
+        editEmailButton.classList.add('hidden');
+        saveEmailButton.classList.remove('hidden');
+        cancelEmailButton.classList.remove('hidden');
+        emailInput.focus();
+    } else {
+        emailDisplay.classList.remove('hidden');
+        emailInput.classList.add('hidden');
+        editEmailButton.classList.remove('hidden');
+        saveEmailButton.classList.add('hidden');
+        cancelEmailButton.classList.add('hidden');
+    }
+}
+
 function formatTimestamp(isoString) {
     try {
         // Use timezone utility function from timezone-utils.js
@@ -458,6 +481,72 @@ async function setWeightThreshold(newThreshold) {
     } catch (error) {
         console.error("Error setting weight threshold:", error);
         showModal('Error', `Failed to save threshold: ${error.message}`);
+        return false;
+    }
+}
+
+async function fetchEmailConfig() {
+    try {
+        console.log(`Fetching email config from: ${API_BASE_URL}/api/v1/config/EMAIL_NOTIFICATIONS`);
+        const response = await fetch(`${API_BASE_URL}/api/v1/config/EMAIL_NOTIFICATIONS`);
+        if (!response.ok) {
+            if (response.status === 404) {
+                // Config not set yet
+                console.log("Email config not set yet");
+                emailDisplay.textContent = "Not configured";
+                emailNotificationsToggle.checked = false;
+                return;
+            }
+            const errorText = await response.text();
+            console.error("Email config fetch failed:", response.status, errorText);
+            throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+        }
+        const data = await response.json();
+        const config = data.value ? JSON.parse(data.value) : null;
+        if (config) {
+            emailDisplay.textContent = config.email || "Not configured";
+            emailInput.value = config.email || "";
+            emailNotificationsToggle.checked = config.enabled || false;
+        }
+        console.log("Fetched email config:", config);
+    } catch (error) {
+        console.error("Error fetching email config:", error);
+        emailDisplay.textContent = "Error";
+        throw error;
+    }
+}
+
+async function setEmailConfig(email, enabled) {
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        showModal('Invalid Email', 'Please enter a valid email address.');
+        return false;
+    }
+
+    try {
+        const config = { email, enabled };
+        const response = await fetch(`${API_BASE_URL}/api/v1/config/EMAIL_NOTIFICATIONS`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ value: JSON.stringify(config), key: "EMAIL_NOTIFICATIONS" })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+        }
+
+        const data = await response.json();
+        console.log("Updated email config:", data);
+        showModal('Success', `Email notifications ${enabled ? 'enabled' : 'disabled'} for ${email}.`);
+        return true;
+
+    } catch (error) {
+        console.error("Error setting email config:", error);
+        showModal('Error', `Failed to save email config: ${error.message}`);
         return false;
     }
 }
@@ -724,6 +813,38 @@ saveTimezoneButton.addEventListener('click', () => {
     fetchFeedHistory(currentPage);
 
     showModal('Success', `Timezone updated to ${selectedTimezone}. All times are now displayed in your selected timezone.`);
+});
+
+editEmailButton.addEventListener('click', () => {
+    toggleEmailEditMode(true);
+});
+
+cancelEmailButton.addEventListener('click', () => {
+    emailInput.value = emailDisplay.textContent.trim();
+    toggleEmailEditMode(false);
+});
+
+saveEmailButton.addEventListener('click', async () => {
+    const email = emailInput.value.trim();
+    const enabled = emailNotificationsToggle.checked;
+    const success = await setEmailConfig(email, enabled);
+    if (success) {
+        emailDisplay.textContent = email;
+        toggleEmailEditMode(false);
+    }
+});
+
+emailNotificationsToggle.addEventListener('change', async (e) => {
+    const enabled = e.target.checked;
+    const currentEmail = emailDisplay.textContent.trim();
+
+    if (currentEmail === "Not configured" || currentEmail === "Error") {
+        showModal('Email Required', 'Please configure your email address first before enabling notifications.');
+        e.target.checked = false;
+        return;
+    }
+
+    await setEmailConfig(currentEmail, enabled);
 });
 
 feedButton.addEventListener('click', sendFeedCommand);
@@ -1311,12 +1432,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Initial load - await all API calls to ensure data loads
     console.log("🚀 Starting initial data load with real-time status...");
-    console.log("Calling Promise.all with 4 API functions...");
+    console.log("Calling Promise.all with 5 API functions...");
 
     try {
         await Promise.all([
             fetchServoDuration(),
             fetchWeightThreshold(),
+            fetchEmailConfig(),
             fetchFeedHistory(1),
             getCachedStatus()
         ]);

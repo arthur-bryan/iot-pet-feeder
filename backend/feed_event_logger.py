@@ -69,36 +69,61 @@ def handler(event, context):
             # UPDATE existing event
             print(f"Updating existing feed event {feed_id} with status '{status}'")
 
-            update_expression = "SET #status = :status"
-            expression_attribute_names = {"#status": "status"}
-            expression_attribute_values = {":status": status}
+            # First, try to get the existing item to calculate delta and preserve fields
+            existing_item = None
+            try:
+                response = table.get_item(Key={'feed_id': feed_id})
+                existing_item = response.get('Item')
+            except Exception as e:
+                print(f"Could not fetch existing item: {e}")
 
-            # Add weight_after_g if provided
-            if weight_after_g is not None:
-                update_expression += ", weight_after_g = :weight_after"
-                expression_attribute_values[":weight_after"] = Decimal(str(weight_after_g))
-                print(f"DEBUG: Adding weight_after_g: {weight_after_g}")
+            if existing_item:
+                # Item exists, perform update
+                update_expression = "SET #status = :status"
+                expression_attribute_names = {"#status": "status"}
+                expression_attribute_values = {":status": status}
 
-                # Try to calculate delta if we have weight_before in the existing item
-                try:
-                    existing_item = table.get_item(Key={'feed_id': feed_id})
-                    if 'Item' in existing_item and 'weight_before_g' in existing_item['Item']:
-                        weight_before = float(existing_item['Item']['weight_before_g'])
+                # Add weight_after_g if provided
+                if weight_after_g is not None:
+                    update_expression += ", weight_after_g = :weight_after"
+                    expression_attribute_values[":weight_after"] = Decimal(str(weight_after_g))
+                    print(f"DEBUG: Adding weight_after_g: {weight_after_g}")
+
+                    # Calculate delta if we have weight_before in the existing item
+                    if 'weight_before_g' in existing_item:
+                        weight_before = float(existing_item['weight_before_g'])
                         weight_delta = float(weight_after_g) - weight_before
                         update_expression += ", weight_delta_g = :weight_delta"
                         expression_attribute_values[":weight_delta"] = Decimal(str(round(weight_delta, 1)))
                         print(f"DEBUG: Calculated weight_delta_g: {round(weight_delta, 1)}")
-                except Exception as e:
-                    print(f"Could not calculate delta: {e}")
 
-            table.update_item(
-                Key={'feed_id': feed_id},
-                UpdateExpression=update_expression,
-                ExpressionAttributeNames=expression_attribute_names,
-                ExpressionAttributeValues=expression_attribute_values
-            )
+                table.update_item(
+                    Key={'feed_id': feed_id},
+                    UpdateExpression=update_expression,
+                    ExpressionAttributeNames=expression_attribute_names,
+                    ExpressionAttributeValues=expression_attribute_values
+                )
+                print(f"Successfully updated feed event {feed_id} to status '{status}'")
+            else:
+                # Item doesn't exist yet (race condition: completed arrived before initiated)
+                # Create a new item with available data from the completed message
+                print(f"Item {feed_id} doesn't exist yet, creating with status '{status}' (race condition detected)")
+                timestamp = datetime.utcnow().isoformat() + "Z"
 
-            print(f"Successfully updated feed event {feed_id} to status '{status}'")
+                item = {
+                    'feed_id': feed_id,
+                    'requested_by': requested_by if requested_by != "unknown" else "unknown",
+                    'mode': mode if mode != "unknown" else "unknown",
+                    'status': status,
+                    'timestamp': timestamp,
+                    'event_type': event_type
+                }
+
+                if weight_after_g is not None:
+                    item['weight_after_g'] = Decimal(str(weight_after_g))
+
+                table.put_item(Item=item)
+                print(f"Successfully created feed event {feed_id} with status '{status}' from completion message")
         else:
             # CREATE new event (status = 'initiated' or other initial status)
             print(f"Creating new feed event {feed_id} with status '{status}'")
@@ -122,10 +147,20 @@ def handler(event, context):
             else:
                 print(f"DEBUG: weight_before_g is None, not adding to item")
 
-            # Save to DynamoDB
+            # Save to DynamoDB with conditional check to prevent overwriting existing records
+            # This prevents race conditions where 'completed' message arrives before 'initiated' finishes
             print(f"DEBUG: About to save item to DynamoDB: {json.dumps(item, default=str)}")
-            table.put_item(Item=item)
-            print(f"DEBUG: Successfully wrote to DynamoDB")
+            try:
+                table.put_item(
+                    Item=item,
+                    ConditionExpression='attribute_not_exists(feed_id)'
+                )
+                print(f"DEBUG: Successfully wrote to DynamoDB")
+            except ClientError as e:
+                if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
+                    print(f"DEBUG: Item {feed_id} already exists (likely updated to 'completed' already), skipping creation")
+                else:
+                    raise
 
             print(f"Successfully created feed event {feed_id}: {json.dumps(item, default=str)}")
 

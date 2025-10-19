@@ -67,6 +67,13 @@ resource "aws_api_gateway_resource" "status_resource" {
   path_part   = "status"
 }
 
+# /status/request resource
+resource "aws_api_gateway_resource" "status_request_resource" {
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  parent_id   = aws_api_gateway_resource.status_resource.id
+  path_part   = "request"
+}
+
 # --- NEW: Notifications Resources ---
 resource "aws_api_gateway_resource" "notifications_resource" {
   rest_api_id = aws_api_gateway_rest_api.this.id
@@ -468,6 +475,23 @@ resource "aws_api_gateway_integration" "get_status_integration" {
   uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.lambda_invoke_arn}/invocations"
 }
 
+# POST /status/request method
+resource "aws_api_gateway_method" "post_status_request_method" {
+  rest_api_id   = aws_api_gateway_rest_api.this.id
+  resource_id   = aws_api_gateway_resource.status_request_resource.id
+  http_method   = "POST"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "post_status_request_integration" {
+  rest_api_id             = aws_api_gateway_rest_api.this.id
+  resource_id             = aws_api_gateway_resource.status_request_resource.id
+  http_method             = aws_api_gateway_method.post_status_request_method.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.lambda_invoke_arn}/invocations"
+}
+
 # --- CORS for /status ---
 # Moved these definitions below the GET method for status
 resource "aws_api_gateway_method" "options_status_method" {
@@ -518,6 +542,56 @@ resource "aws_api_gateway_integration_response" "options_status_integration_200"
   depends_on = [aws_api_gateway_integration.options_status_integration]
 }
 # --- End CORS for /status ---
+
+# --- CORS for /status/request ---
+resource "aws_api_gateway_method" "options_status_request_method" {
+  rest_api_id   = aws_api_gateway_rest_api.this.id
+  resource_id   = aws_api_gateway_resource.status_request_resource.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+  request_models = {
+    "application/json" = "Error"
+  }
+}
+
+resource "aws_api_gateway_integration" "options_status_request_integration" {
+  rest_api_id             = aws_api_gateway_rest_api.this.id
+  resource_id             = aws_api_gateway_resource.status_request_resource.id
+  http_method             = aws_api_gateway_method.options_status_request_method.http_method
+  type                    = "MOCK"
+  request_templates = {
+    "application/json" = "{ \"statusCode\": 200 }"
+  }
+}
+
+resource "aws_api_gateway_method_response" "options_status_request_200" {
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = aws_api_gateway_resource.status_request_resource.id
+  http_method = aws_api_gateway_method.options_status_request_method.http_method
+  status_code = "200"
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true,
+    "method.response.header.Access-Control-Allow-Methods" = true,
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+}
+
+resource "aws_api_gateway_integration_response" "options_status_request_integration_200" {
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = aws_api_gateway_resource.status_request_resource.id
+  http_method = aws_api_gateway_method.options_status_request_method.http_method
+  status_code = aws_api_gateway_method_response.options_status_request_200.status_code
+  response_templates = {
+    "application/json" = ""
+  }
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+    "method.response.header.Access-Control-Allow-Methods" = "'OPTIONS,POST'",
+    "method.response.header.Access-Control-Allow-Origin"  = "'*'"
+  }
+  depends_on = [aws_api_gateway_integration.options_status_request_integration]
+}
+# --- End CORS for /status/request ---
 
 
 # --- NEW: Notifications Methods ---
@@ -620,8 +694,10 @@ resource "aws_api_gateway_deployment" "this" {
     aws_api_gateway_integration.post_feed_integration,
     aws_api_gateway_integration.get_feed_history_integration,
     aws_api_gateway_integration.get_status_integration,
+    aws_api_gateway_integration.post_status_request_integration,
     aws_api_gateway_integration.options_feed_integration,
     aws_api_gateway_integration.options_status_integration,
+    aws_api_gateway_integration.options_status_request_integration,
     aws_api_gateway_integration.get_schedules_integration,
     aws_api_gateway_integration.post_schedules_integration,
     aws_api_gateway_integration.any_schedules_proxy_integration,
@@ -646,6 +722,7 @@ resource "aws_api_gateway_deployment" "this" {
       aws_api_gateway_resource.schedules_resource.id,
       aws_api_gateway_resource.schedules_proxy_resource.id,
       aws_api_gateway_resource.status_resource.id,
+      aws_api_gateway_resource.status_request_resource.id,
       aws_api_gateway_resource.config_resource.id,
       aws_api_gateway_resource.config_key_resource.id,
       aws_api_gateway_resource.notifications_resource.id,
@@ -653,8 +730,10 @@ resource "aws_api_gateway_deployment" "this" {
       aws_api_gateway_method.post_feed_method.id,
       aws_api_gateway_method.get_feed_history_method.id,
       aws_api_gateway_method.get_status_method.id,
+      aws_api_gateway_method.post_status_request_method.id,
       aws_api_gateway_method.options_feed_method.id,
       aws_api_gateway_method.options_status_method.id,
+      aws_api_gateway_method.options_status_request_method.id,
       aws_api_gateway_method.get_schedules_method.id,
       aws_api_gateway_method.post_schedules_method.id,
       aws_api_gateway_method.any_schedules_proxy_method.id,

@@ -81,6 +81,12 @@ function handleVisibilityChange() {
         // Immediately fetch fresh data
         updateDeviceStatus();
         fetchFeedHistory(currentPage);
+
+        // Also refresh chart if we're in chart view
+        if (currentView === 'chart') {
+            loadChartData(currentTimeInterval);
+        }
+
         // Restart intervals
         startPolling();
     }
@@ -93,7 +99,7 @@ function startPolling() {
 
     console.log("⏰ Starting event-driven polling strategy");
     console.log("   - Device status: every 3 seconds (real-time feel)");
-    console.log("   - Feed history: every 10 seconds (catch consumption/refill events)");
+    console.log("   - Feed history + Chart: every 10 seconds (catch consumption/refill events)");
     console.log("   - Aggressive mode: 1s polling after user actions");
     console.log("   - Polling stops when tab is hidden to save costs");
 
@@ -106,11 +112,17 @@ function startPolling() {
         }
     }, 3000);
 
-    // Feed history: every 10 seconds to catch consumption/refill events faster
+    // Feed history + Chart: every 10 seconds to catch consumption/refill events faster
     historyPollingInterval = setInterval(() => {
         if (isPageVisible && !aggressivePollingActive) {
             console.log("Auto-refresh: Fetching feed history...");
             fetchFeedHistory(currentPage);
+
+            // Also refresh chart if we're in chart view
+            if (currentView === 'chart') {
+                console.log("Auto-refresh: Refreshing chart...");
+                loadChartData(currentTimeInterval);
+            }
         }
     }, 10000);
 }
@@ -140,10 +152,15 @@ function startAggressivePolling(durationSeconds = 15) {
         }
     }, 1000);
 
-    // Also poll history at 5s intervals during aggressive mode
+    // Also poll history and chart at 5s intervals during aggressive mode
     historyPollingInterval = setInterval(() => {
         if (pollCount < maxPolls && isPageVisible) {
             fetchFeedHistory(currentPage);
+
+            // Also refresh chart if we're in chart view
+            if (currentView === 'chart') {
+                loadChartData(currentTimeInterval);
+            }
         }
     }, 5000);
 }
@@ -936,6 +953,12 @@ refreshButton.addEventListener('click', async () => {
             fetchWeightThreshold(),
             fetchFeedHistory(1)
         ]);
+
+        // Also refresh chart if we're in chart view
+        if (currentView === 'chart') {
+            await loadChartData(currentTimeInterval);
+        }
+
         console.log("✅ Manual refresh completed successfully!");
     } catch (error) {
         console.error("❌ Error during manual refresh:", error);
@@ -1579,7 +1602,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log("   - Polling pauses when tab is hidden");
     console.log("   - Device status: 3s intervals for real-time feel (1200 req/hr base)");
     console.log("   - Aggressive mode: 1s polling for 15-20s after actions");
-    console.log("   - Feed history: 10s intervals (360 req/hr)");
+    console.log("   - Feed history + Chart: 10s intervals (360 req/hr)");
+    console.log("   - Chart auto-refreshes when in chart view");
     console.log("   - ESP32 publishes events (consumption, refill, manual_feed)");
     console.log("   - Total: ~1560 req/hr idle, peaks during active use");
 });

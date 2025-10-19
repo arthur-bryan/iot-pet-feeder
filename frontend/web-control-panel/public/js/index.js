@@ -14,7 +14,6 @@ const deviceStatusElement = document.getElementById('deviceStatus');
 const statusMessageElement = document.getElementById('statusMessage');
 const currentWeightElement = document.getElementById('currentWeight');
 const refreshButton = document.getElementById('refreshButton');
-const userNameDisplay = document.getElementById('userNameDisplay');
 const themeToggleButton = document.getElementById('themeToggleButton');
 const sunIcon = document.getElementById('sunIcon');
 const moonIcon = document.getElementById('moonIcon');
@@ -1092,10 +1091,44 @@ async function loadChartData(interval, customRange = null) {
     }
 }
 
+function updateEventStatistics(feedEvents) {
+    // Count events by type
+    const stats = {
+        total: feedEvents.length,
+        manual_feed: 0,
+        consumption: 0,
+        refill: 0,
+        scheduled_feed: 0
+    };
+
+    feedEvents.forEach(event => {
+        const eventType = event.event_type || 'unknown';
+        if (stats.hasOwnProperty(eventType)) {
+            stats[eventType]++;
+        }
+    });
+
+    // Update UI elements
+    const totalEventsCount = document.getElementById('totalEventsCount');
+    const manualFeedCount = document.getElementById('manualFeedCount');
+    const consumptionCount = document.getElementById('consumptionCount');
+    const refillCount = document.getElementById('refillCount');
+
+    if (totalEventsCount) totalEventsCount.textContent = stats.total;
+    if (manualFeedCount) manualFeedCount.textContent = stats.manual_feed + (stats.scheduled_feed || 0);  // Combine manual and scheduled
+    if (consumptionCount) consumptionCount.textContent = stats.consumption;
+    if (refillCount) refillCount.textContent = stats.refill;
+
+    console.log('Event statistics updated:', stats);
+}
+
 function renderWeightChart(feedEvents, timeRange) {
     console.log('=== renderWeightChart CALLED ===');
     console.log('Total feedEvents received:', feedEvents.length);
     console.log('Time range:', timeRange);
+
+    // Update event statistics
+    updateEventStatistics(feedEvents);
 
     // Check if Chart.js is loaded
     if (typeof Chart === 'undefined') {
@@ -1421,7 +1454,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 currentUserName = user.signInDetails.loginId || user.username || user.attributes.email || "Authenticated User";
                 sessionStorage.setItem('authenticatedUserEmail', currentUserName);
                 sessionStorage.removeItem('guestUserName');
-                userNameDisplay.textContent = `Welcome, ${currentUserName}!`;
                 userLoggedIn = true;
             }
         } catch (error) {
@@ -1437,7 +1469,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (storedGuestName) {
             console.log("Guest session found:", storedGuestName);
             currentUserName = storedGuestName;
-            userNameDisplay.textContent = `Welcome, ${currentUserName}!`;
             userLoggedIn = true;
         }
     }
@@ -1446,7 +1477,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!userLoggedIn) {
         console.log("No user session found. Allowing access as Guest (authentication disabled).");
         currentUserName = "Guest";
-        userNameDisplay.textContent = `Welcome, ${currentUserName}!`;
         userLoggedIn = true;
     }
 

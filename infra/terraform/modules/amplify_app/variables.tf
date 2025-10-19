@@ -24,27 +24,6 @@ variable "github_token" {
   sensitive   = true
 }
 
-variable "build_spec" {
-  description = "The build specification YAML for the Amplify app."
-  type        = string
-  default     = <<-EOT
-    version: 1
-    frontend:
-      phases:
-        preBuild:
-          commands:
-            - echo "No pre-build commands needed for static HTML/JS."
-        build:
-          commands:
-            - echo "No build commands needed for static HTML/JS."
-      artifacts:
-        baseDirectory: frontend/web-control-panel/public # Your frontend's public directory
-        files:
-          - '**/*'
-      cache:
-        paths: []
-    EOT
-}
 
 variable "environment_variables" {
   description = "A map of environment variables for the Amplify build."

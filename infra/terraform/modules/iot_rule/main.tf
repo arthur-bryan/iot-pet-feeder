@@ -12,7 +12,7 @@ resource "aws_iot_topic_rule" "this" {
   error_action {
     cloudwatch_alarm {
       role_arn    = var.lambda_execution_role_arn
-      alarm_name  = "${var.project_name}-IoT-Rule-Error-${var.rule_name}"
+      alarm_name  = "$IoT-Rule-Error-${var.rule_name}"
       state_reason = "IoT Rule failed to execute action."
       state_value = "ALARM"
     }

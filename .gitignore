@@ -1,4 +1,14 @@
 layer/
+layer_build/
+
+# Python dependencies installed in backend (should be in Lambda layer)
+backend/*/
+backend/*.dist-info/
+!backend/app/
+!backend/*.py
+!backend/requirements.txt
+!backend/README.md
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -137,6 +147,7 @@ celerybeat.pid
 
 # Environments
 .env
+.venv
 .envrc
 .venv
 env/
@@ -206,3 +217,32 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfvars
+!terraform.tfvars.example
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# Terraform plan files
+*.tfplan
+plan
+*.plan
+
+# Lambda deployment packages
+*.zip
+!layer.zip
+
+# Build artifacts
+lambda_deploy_package/
+lambda_package.zip

@@ -31,14 +31,12 @@ variable "github_repo_name" {
 variable "github_owner" {
   description = "The owner/organization of the GitHub repository."
   type        = string
-  default     = "arthur-bryan" # Replace with your GitHub username or organization
 }
 
 variable "github_token" {
   description = "GitHub Personal Access Token with 'repo' scope for Amplify to connect to the repository. Store as GitHub Secret."
   type        = string
   sensitive   = true
-  default     = ""  # Optional - only needed for Amplify deployment
 }
 
 variable "build_dir" {

@@ -40,5 +40,5 @@ output "iot_data_plane_endpoint" {
 
 output "amplify_frontend_url" { # <<< NEW OUTPUT
   description = "The URL of the deployed Amplify frontend application."
-  value       = "https://${module.amplify_app.amplify_app_default_domain}"
+  value       = "https://${var.environment}.${module.amplify_app.amplify_app_default_domain}"
 }

@@ -16,3 +16,7 @@ def get_feed_schedule_table():
 
 def get_device_status_table():
     return get_dynamodb_resource().Table(settings.DEVICE_STATUS_TABLE_NAME)
+
+
+def get_config_table():
+    return get_dynamodb_resource().Table(settings.DYNAMO_FEED_CONFIG_TABLE_NAME)

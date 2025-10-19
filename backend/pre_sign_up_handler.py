@@ -5,19 +5,21 @@ import boto3
 from datetime import datetime
 from botocore.exceptions import ClientError
 
+# Get AWS region from Lambda environment (automatically provided)
+AWS_REGION = os.environ.get('AWS_REGION', os.environ.get('AWS_DEFAULT_REGION', 'us-east-1'))
+
 # Initialize AWS clients
-dynamodb = boto3.resource('dynamodb')
-sns_client = boto3.client('sns')
-cognito_client = boto3.client('cognito-idp') # Needed for AdminConfirmSignUp if we were to confirm here, but the trigger handles autoConfirmUser
+dynamodb = boto3.resource('dynamodb', region_name=AWS_REGION)
+sns_client = boto3.client('sns', region_name=AWS_REGION)
+cognito_client = boto3.client('cognito-idp', region_name=AWS_REGION)
 
 # Environment variables (set via Terraform)
 ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL')
 PENDING_USERS_TABLE_NAME = os.environ.get('PENDING_USERS_TABLE_NAME')
 SNS_TOPIC_ARN = os.environ.get('SNS_TOPIC_ARN')
-AWS_REGION = os.environ.get('AWS_REGION') # Ensure this is passed from Terraform
 
 # Validate environment variables on startup (good practice for Lambdas)
-if not all([ADMIN_EMAIL, PENDING_USERS_TABLE_NAME, SNS_TOPIC_ARN, AWS_REGION]):
+if not all([ADMIN_EMAIL, PENDING_USERS_TABLE_NAME, SNS_TOPIC_ARN]):
     print("ERROR: One or more required environment variables are missing.")
     # In a production system, you might want to raise an exception here
     # or use a dead-letter queue for events that fail due to misconfiguration.

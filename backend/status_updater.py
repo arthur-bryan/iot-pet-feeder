@@ -3,21 +3,22 @@ import json
 import os
 import boto3
 from datetime import datetime
+from decimal import Decimal
 from botocore.exceptions import ClientError
 
 
 DYNAMODB_TABLE_NAME = os.environ.get("DEVICE_STATUS_TABLE_NAME")
 IOT_THING_ID = os.environ.get("IOT_THING_ID")
-AWS_REGION = os.environ.get("AWS_REGION")
+AWS_REGION = os.environ.get("AWS_REGION", os.environ.get("AWS_DEFAULT_REGION", "us-east-1"))
 
 # Ensure environment variables are set
-if not DYNAMODB_TABLE_NAME or not IOT_THING_ID or not AWS_REGION:
-    print("ERROR: Missing required environment variables (DEVICE_STATUS_TABLE_NAME, IOT_THING_ID, AWS_REGION).")
+if not DYNAMODB_TABLE_NAME or not IOT_THING_ID:
+    print("ERROR: Missing required environment variables (DEVICE_STATUS_TABLE_NAME, IOT_THING_ID).")
     # In a production scenario, you might raise an exception or log to a dead-letter queue.
     # For now, we'll let it proceed to raise an error during execution if not set,
     # but this print statement helps with initial debugging.
 
-# Initialize DynamoDB client with explicit region
+# Initialize DynamoDB client (region is automatically detected in Lambda)
 dynamodb = boto3.resource('dynamodb', region_name=AWS_REGION)
 table = dynamodb.Table(DYNAMODB_TABLE_NAME)
 
@@ -46,24 +47,27 @@ def handler(event, context):
         network_status = payload.get("network_status", "unknown")
         message = payload.get("message", "No message")
         trigger_method = payload.get("trigger_method", "unknown")
+        current_weight_g = payload.get("current_weight_g", 0.0)
 
         current_timestamp = datetime.utcnow().isoformat() + "Z"  # ISO 8601 with Z for UTC
 
         # Prepare the item to be stored/updated in DynamoDB
         # The 'thing_id' is the partition key for the DeviceStatus table.
+        # DynamoDB requires Decimal type for numeric values, not float
         item = {
             'thing_id': IOT_THING_ID,
             'feeder_state': feeder_state,
             'network_status': network_status,
             'message': message,
             'trigger_method': trigger_method,
+            'current_weight_g': Decimal(str(current_weight_g)),  # Convert to Decimal for DynamoDB
             'last_updated': current_timestamp
         }
 
         # PutItem will create a new item or replace an existing item with the same primary key.
         table.put_item(Item=item)
 
-        print(f"Successfully updated device status for {IOT_THING_ID}: {json.dumps(item)}")
+        print(f"Successfully updated device status for {IOT_THING_ID}: weight={current_weight_g}g, state={feeder_state}")
         return {
             'statusCode': 200,
             'body': json.dumps('Device status updated successfully!')

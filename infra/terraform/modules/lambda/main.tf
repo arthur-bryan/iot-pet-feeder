@@ -1,7 +1,38 @@
+# infra/terraform/modules/lambda/main.tf
+# This module will now create the Lambda deployment ZIP using the 'archive_file' data source.
+# Only includes application code, not dependencies (those go in the layer)
+
 data "archive_file" "this" {
   type        = "zip"
-  source_dir  = var.source_path
+  source_dir  = var.source_path # Path to the Lambda function's source code directory
   output_path = "${path.module}/${var.function_name}.zip" # Output ZIP file to module directory
+
+  # Exclude dependencies that are in the layer
+  excludes = [
+    "**/*.dist-info/**",
+    "**/__pycache__/**",
+    "**/boto3/**",
+    "**/botocore/**",
+    "**/fastapi/**",
+    "**/starlette/**",
+    "**/pydantic/**",
+    "**/pydantic_core/**",
+    "**/pydantic_settings/**",
+    "**/mangum/**",
+    "**/anyio/**",
+    "**/sniffio/**",
+    "**/idna/**",
+    "**/s3transfer/**",
+    "**/jmespath/**",
+    "**/dateutil/**",
+    "**/dotenv/**",
+    "**/typing_extensions/**",
+    "**/typing_inspection/**",
+    "**/annotated_types/**",
+    "**/urllib3/**",
+    "**/six/**",
+    "**/bin/**"
+  ]
 }
 
 # Upload the generated zip file to S3
@@ -26,6 +57,7 @@ resource "aws_lambda_function" "this" {
   role             = aws_iam_role.execution_role.arn
   timeout          = var.timeout
   memory_size      = var.memory_size
+  layers           = var.layer_arns
 
   environment {
     variables = var.environment_variables
@@ -39,9 +71,9 @@ resource "aws_lambda_function" "this" {
   depends_on = [aws_s3_object.lambda_package]
 }
 
-# IAM Role and Policy attachments (rest of the module remains the same as before)
+# IAM Role and Policy attachments
 resource "aws_iam_role" "execution_role" {
-  name = "${var.project_name}-${var.function_name}-execution-role"
+  name = "${var.function_name}-execution-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
@@ -62,7 +94,7 @@ resource "aws_iam_role" "execution_role" {
 }
 
 resource "aws_iam_policy" "logging_policy" {
-  name        = "${var.project_name}-${var.function_name}-logging-policy"
+  name        = "${var.function_name}-logging-policy"
   description = "IAM policy for Lambda function to write logs to CloudWatch"
 
   policy = jsonencode({
@@ -70,9 +102,23 @@ resource "aws_iam_policy" "logging_policy" {
     Statement = [
       {
         Action = [
+          "iot:*"
+        ],
+        Effect = "Allow",
+        Resource = "*"
+      },
+      {
+        Action = [
+          "dynamodb:*"
+        ],
+        Effect = "Allow",
+        Resource = "*"
+      },
+      {
+        Action = [
           "logs:CreateLogGroup",
           "logs:CreateLogStream",
-          "logs:PutLogEvents"
+          "logs:PutLogEvents",
         ],
         Effect = "Allow",
         Resource = "arn:aws:logs:${var.aws_region}:${var.aws_account_id}:log-group:/aws/lambda/${aws_lambda_function.this.function_name}:*"
@@ -85,3 +131,4 @@ resource "aws_iam_role_policy_attachment" "logging_attach" {
   role       = aws_iam_role.execution_role.name
   policy_arn = aws_iam_policy.logging_policy.arn
 }
+

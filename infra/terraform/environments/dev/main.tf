@@ -129,44 +129,7 @@ resource "aws_iam_role_policy_attachment" "iot_rule_cloudwatch_attach" {
 }
 # --- END NEW IAM Role ---
 
-# --- NEW: IAM Policy for Cognito Pre-Sign-up Lambda ---
-resource "aws_iam_policy" "cognito_pre_sign_up_lambda_policy" {
-  name        = "${var.project_name}-CognitoPreSignUpLambdaPolicy-${var.environment}"
-  description = "IAM policy for Cognito Pre-Sign-up Lambda to manage users and send notifications"
-
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Action = [
-          "cognito-idp:AdminConfirmSignUp",
-          "cognito-idp:AdminDisableUser", # For potential future rejection logic
-          "cognito-idp:ListUsers" # To check for existing users/admin
-        ],
-        Effect = "Allow",
-        Resource = module.cognito_user_pool.user_pool_arn
-      },
-      {
-        Action = [
-          "dynamodb:PutItem",
-          "dynamodb:GetItem",
-          "dynamodb:UpdateItem",
-          "dynamodb:Scan" # For checking pending users
-        ],
-        Effect = "Allow",
-        Resource = module.pending_users_table.table_arn
-      },
-      {
-        Action = [
-          "ses:SendEmail", # For sending approval emails (if using SES directly)
-          "sns:Publish"    # For publishing to SNS topic (if using SNS for emails)
-        ],
-        Effect = "Allow",
-        Resource = aws_sns_topic.admin_notification_topic.arn # Allow publishing to the SNS topic
-      }
-    ]
-  })
-}
+#
 
 # --- NEW: SNS Topic for Admin Notifications ---
 resource "aws_sns_topic" "admin_notification_topic" {
@@ -356,31 +319,7 @@ module "feed_event_logger_lambda" {
   ]
 }
 
-# NEW: Lambda for Cognito Pre-Sign-up Trigger
-module "pre_sign_up_lambda" {
-  source                = "../../modules/lambda"
-  project_name          = var.project_name
-  aws_region            = var.aws_region
-  aws_account_id        = data.aws_caller_identity.current.account_id
-  function_name         = "${var.project_name}-cognito-pre-sign-up-${var.environment}"
-  s3_bucket_id          = aws_s3_bucket.lambda_deployment_bucket.id
-  source_path           = "../../../../backend" # Assuming pre_sign_up_handler.py will be in backend root
-  handler               = "pre_sign_up_handler.handler" # This will be a new Python file
-  runtime               = var.python_version
-  timeout               = 10
-  memory_size           = 128
-  layer_arns            = [module.python_dependencies_layer.layer_arn]
-  environment_variables = {
-    PROJECT_NAME             = var.project_name,
-    ADMIN_EMAIL              = var.admin_email,
-    PENDING_USERS_TABLE_NAME = module.pending_users_table.table_name,
-    SNS_TOPIC_ARN            = aws_sns_topic.admin_notification_topic.arn
-  }
-  attached_policy_arns = [
-    aws_iam_policy.cognito_pre_sign_up_lambda_policy.arn,
-    # Add CloudWatch logging policy if not already handled by the lambda module
-  ]
-}
+
 
 # NEW: SNS Topic for Feed Event Email Notifications
 resource "aws_sns_topic" "feed_notification_topic" {
@@ -465,7 +404,6 @@ module "api_gateway" {
   lambda_function_name = module.api_lambda.lambda_function_name
   stage_name           = var.environment
   aws_region           = var.aws_region
-  # No Cognito Authorizer integration here yet, will be a separate step
 }
 
 # IoT Topic Rule for Device Status
@@ -540,48 +478,9 @@ module "amplify_app" {
   github_token        = var.github_token
   environment_variables = {
     VITE_API_BASE_URL        = module.api_gateway.api_gateway_invoke_url,
-    VITE_USER_POOL_ID        = module.cognito_user_pool.user_pool_id,
-    VITE_USER_POOL_CLIENT_ID = aws_cognito_user_pool_client.web_client.id, # Keep this
     VITE_REGION              = var.aws_region,
     VITE_GOOGLE_CLIENT_ID    = var.google_client_id, # ADD THIS
-    VITE_USER_POOL_DOMAIN    = module.cognito_user_pool.user_pool_domain # ADD THIS
   }
 }
 
-# NEW: Cognito User Pool Module Call
-module "cognito_user_pool" {
-  source               = "../../modules/cognito_user_pool"
-  user_pool_name       = "${var.project_name}-users-${var.environment}"
-  project_name         = var.project_name
-  environment          = var.environment
-  aws_region           = var.aws_region
-  google_client_id     = var.google_client_id
-  google_client_secret = var.google_client_secret
-  # callback_urls and logout_urls are removed from here as they are now in the client resource
-  admin_email          = var.admin_email
-  lambda_pre_sign_up_arn = module.pre_sign_up_lambda.lambda_arn # Link the pre-sign-up Lambda
-}
-
-# NEW: Cognito User Pool Client (moved from module to resolve cycle)
-resource "aws_cognito_user_pool_client" "web_client" {
-  name                                 = "${var.project_name}-web-client-${var.environment}"
-  user_pool_id                         = module.cognito_user_pool.user_pool_id
-  generate_secret                      = false # False for web applications
-  allowed_oauth_flows_user_pool_client = true
-  allowed_oauth_flows                  = ["code", "implicit"]
-  # ADDED: Required OAuth scopes
-  allowed_oauth_scopes                 = ["phone", "email", "openid", "profile", "aws.cognito.signin.user.admin"]
-  # Construct callback/logout URLs using a generic placeholder to break the cycle
-  # IMPORTANT: You MUST update these URLs in the AWS Cognito console AFTER Amplify deployment
-  # to the actual Amplify App URL (e.g., https://<your-amplify-domain>.amplifyapp.com/)
-  callback_urls                        = ["https://example.com/", "https://example.com/oauth2/idpresponse"]
-  logout_urls                          = ["https://example.com/"]
-  supported_identity_providers         = ["COGNITO", "Google"] # Allow Cognito's own login and Google
-  explicit_auth_flows = [ # Essential for custom pre-sign-up flow
-    "ALLOW_ADMIN_USER_PASSWORD_AUTH",
-    "ALLOW_CUSTOM_AUTH",
-    "ALLOW_USER_PASSWORD_AUTH",
-    "ALLOW_REFRESH_TOKEN_AUTH"
-  ]
-}
 

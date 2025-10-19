@@ -28,3 +28,8 @@ variable "stage_name" {
   type        = string
   default     = "prd"
 }
+
+variable "aws_region" {
+  description = "AWS region for the API Gateway and Lambda integration."
+  type        = string
+}

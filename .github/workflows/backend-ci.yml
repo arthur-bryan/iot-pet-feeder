@@ -118,7 +118,7 @@ jobs:
             -var="build_dir=${{ env.BUILD_DIR }}" \
             -var="api_lambda_zip_name=${{ env.API_LAMBDA_ZIP_NAME }}" \
             -var="status_lambda_zip_name=${{ env.STATUS_LAMBDA_ZIP_NAME }}" \
-            -var="github_token=${{ secrets.AMPLIFY_GITHUB_TOKEN }}" # <<< ADDED THIS
+            -var="github_token=${{ secrets.AMPLIFY_GITHUB_TOKEN }}"
             -out=tfplan
 
       - name: Terraform Apply

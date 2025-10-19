@@ -1,3 +1,4 @@
+# infra/terraform/modules/lambda/variables.tf
 variable "project_name" {
   description = "Name of the project."
   type        = string
@@ -23,12 +24,12 @@ variable "s3_bucket_id" {
   type        = string
 }
 
-variable "source_path" {
+variable "source_path" { # <<< RE-INTRODUCED: Local path to the Lambda function's source code directory
   description = "Local path to the Lambda function's source code directory. Dependencies must be installed here."
   type        = string
 }
 
-# Removed output_zip_filename as it's now internal to archive_file and based on function_name.
+# Removed local_zip_path and s3_key as they are not used with archive_file
 
 variable "handler" {
   description = "The function entrypoint in your Lambda code (e.g., 'main.handler')."
@@ -58,6 +59,12 @@ variable "environment_variables" {
 
 variable "attached_policy_arns" {
   description = "A list of additional IAM policy ARNs to attach to the Lambda's execution role."
+  type        = list(string)
+  default     = []
+}
+
+variable "layer_arns" {
+  description = "List of Lambda Layer ARNs to attach to the function."
   type        = list(string)
   default     = []
 }

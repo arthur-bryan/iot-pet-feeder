@@ -4,11 +4,12 @@
 # It should be run once locally to prepare the environment for Terraform operations.
 
 # --- Configuration ---
-PROJECT_NAME="pet-feeder" # Ensure this matches your Terraform variables
-AWS_REGION="sa-east-1"   # Ensure this matches your Terraform variables
+PROJECT_NAME="iot-pet-feeder" # Ensure this matches your Terraform variables
+AWS_REGION="us-east-2"   # Ensure this matches your Terraform variables
 TF_STATE_BUCKET_NAME="${PROJECT_NAME}-terraform-state-${AWS_REGION}"
 TF_LOCK_TABLE_NAME="${PROJECT_NAME}-terraform-lock"
 
+iot-pet-feeder-terraform-state-us-east-2
 # Environment to initialize (e.g., dev, prod) - this should match a subdirectory in infra/terraform/environments
 ENVIRONMENT="dev" # Default to 'dev' for local setup
 

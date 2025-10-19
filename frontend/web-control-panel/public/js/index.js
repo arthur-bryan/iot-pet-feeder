@@ -966,7 +966,9 @@ const nextViewButton = document.getElementById('nextViewButton');
 const tableViewContainer = document.getElementById('tableViewContainer');
 const chartViewContainer = document.getElementById('chartViewContainer');
 const timeRangeFilters = document.getElementById('timeRangeFilters');
-const timeIntervalButtons = document.querySelectorAll('.time-interval-btn');
+const quickTimeRange = document.getElementById('quickTimeRange');
+const toggleCustomRange = document.getElementById('toggleCustomRange');
+const customRangeContainer = document.getElementById('customRangeContainer');
 const customStartTime = document.getElementById('customStartTime');
 const customEndTime = document.getElementById('customEndTime');
 const applyCustomRange = document.getElementById('applyCustomRange');
@@ -1002,6 +1004,18 @@ function getTimeRange(interval) {
     const start = new Date();
 
     switch(interval) {
+        case '15m':
+            start.setMinutes(now.getMinutes() - 15);
+            break;
+        case '30m':
+            start.setMinutes(now.getMinutes() - 30);
+            break;
+        case '1h':
+            start.setHours(now.getHours() - 1);
+            break;
+        case '3h':
+            start.setHours(now.getHours() - 3);
+            break;
         case '6h':
             start.setHours(now.getHours() - 6);
             break;
@@ -1291,22 +1305,18 @@ nextViewButton.addEventListener('click', () => {
     switchView(currentView === 'table' ? 'chart' : 'table');
 });
 
-// Time interval buttons
-timeIntervalButtons.forEach(btn => {
-    btn.addEventListener('click', (e) => {
-        // Remove active class from all buttons
-        timeIntervalButtons.forEach(b => {
-            b.classList.remove('bg-indigo-600', 'text-white');
-            b.classList.add('border-gray-300', 'dark:border-gray-600');
-        });
+// Quick time range dropdown
+quickTimeRange.addEventListener('change', (e) => {
+    currentTimeInterval = e.target.value;
+    loadChartData(currentTimeInterval);
 
-        // Add active class to clicked button
-        e.target.classList.add('bg-indigo-600', 'text-white');
-        e.target.classList.remove('border-gray-300', 'dark:border-gray-600');
+    // Hide custom range when switching to quick range
+    customRangeContainer.classList.add('hidden');
+});
 
-        currentTimeInterval = e.target.dataset.interval;
-        loadChartData(currentTimeInterval);
-    });
+// Toggle custom range visibility
+toggleCustomRange.addEventListener('click', () => {
+    customRangeContainer.classList.toggle('hidden');
 });
 
 // Custom time range
@@ -1327,11 +1337,9 @@ applyCustomRange.addEventListener('click', () => {
         return;
     }
 
-    // Clear interval button selection
-    timeIntervalButtons.forEach(b => {
-        b.classList.remove('bg-indigo-600', 'text-white');
-        b.classList.add('border-gray-300', 'dark:border-gray-600');
-    });
+    // Reset dropdown to default (24h) since we're using custom range
+    quickTimeRange.value = '24h';
+    currentTimeInterval = '24h';
 
     loadChartData(null, {
         start: start.toISOString(),

@@ -738,7 +738,7 @@ nextPageButton.addEventListener('click', () => {
     }
 });
 refreshButton.addEventListener('click', async () => {
-    console.log("🔄 Manual refresh triggered - requesting real-time data...");
+    console.log("🔄 Manual refresh triggered - requesting real-time data from ESP32...");
 
     // Disable button during refresh
     refreshButton.disabled = true;
@@ -750,16 +750,35 @@ refreshButton.addEventListener('click', async () => {
     `;
 
     try {
-        // Fetch all data in parallel
+        // Request real-time status from ESP32 first
+        console.log("Requesting real-time status from ESP32...");
+        const statusResponse = await fetch(`${API_BASE_URL}/status/request`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!statusResponse.ok) {
+            console.warn("Failed to request real-time status, falling back to cached");
+        } else {
+            const statusData = await statusResponse.json();
+            console.log("Real-time status response:", statusData);
+            if (statusData.status) {
+                updateStatusUI(statusData.status);
+            }
+        }
+
+        // Fetch all other data in parallel
         await Promise.all([
             fetchServoDuration(),
             fetchWeightThreshold(),
-            fetchFeedHistory(1),
-            getCachedStatus()
+            fetchFeedHistory(1)
         ]);
         console.log("✅ Manual refresh completed successfully!");
     } catch (error) {
         console.error("❌ Error during manual refresh:", error);
+        showModal('Refresh Error', `Failed to refresh data: ${error.message}`);
     } finally {
         // Re-enable button and restore original HTML
         refreshButton.disabled = false;

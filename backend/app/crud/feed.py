@@ -4,6 +4,7 @@ import asyncio
 import boto3
 from botocore.exceptions import ClientError
 from typing import List, Dict, Any
+from decimal import Decimal
 
 from app.models.feed import FeedRequest
 from app.models.schedule import ScheduleRequest
@@ -90,6 +91,24 @@ def save_schedule(request: ScheduleRequest) -> dict:
     return item
 
 
+def convert_decimal_to_number(obj):
+    """
+    Recursively converts DynamoDB Decimal types to int or float for JSON serialization.
+    """
+    if isinstance(obj, list):
+        return [convert_decimal_to_number(i) for i in obj]
+    elif isinstance(obj, dict):
+        return {k: convert_decimal_to_number(v) for k, v in obj.items()}
+    elif isinstance(obj, Decimal):
+        # Convert to int if it's a whole number, otherwise float
+        if obj % 1 == 0:
+            return int(obj)
+        else:
+            return float(obj)
+    else:
+        return obj
+
+
 async def get_latest_device_status() -> Dict[str, Any]: # <<< NEW FUNCTION
     """
     Retrieves the latest device status from the DynamoDB table.
@@ -105,10 +124,64 @@ async def get_latest_device_status() -> Dict[str, Any]: # <<< NEW FUNCTION
             None,
             lambda: table.get_item(Key={'thing_id': thing_id})
         )
-        return response.get('Item')
+        item = response.get('Item')
+        if item:
+            # Convert Decimal types to regular numbers for JSON serialization
+            item = convert_decimal_to_number(item)
+        return item
     except ClientError as e:
         print(f"Error getting device status from DynamoDB: {e}")
         raise e
     except Exception as e:
         print(f"An unexpected error occurred while fetching device status: {e}")
+        raise e
+
+
+async def delete_all_feed_events() -> int:
+    """
+    Deletes all feed events from the DynamoDB feed history table.
+    Returns the number of items deleted.
+    """
+    loop = asyncio.get_event_loop()
+    table = get_feed_history_table()
+    deleted_count = 0
+
+    try:
+        # Scan to get all items
+        scan_params = {}
+        while True:
+            response = await loop.run_in_executor(
+                None,
+                lambda: table.scan(**scan_params)
+            )
+
+            items = response.get('Items', [])
+
+            # Delete each item
+            for item in items:
+                # feed_id is the partition key
+                feed_id = item.get('feed_id')
+                if feed_id:
+                    await loop.run_in_executor(
+                        None,
+                        lambda key=feed_id: table.delete_item(Key={'feed_id': key})
+                    )
+                    deleted_count += 1
+                    print(f"Deleted feed event: {feed_id}")
+
+            # Check if there are more items to scan
+            last_evaluated_key = response.get('LastEvaluatedKey')
+            if not last_evaluated_key:
+                break
+
+            scan_params['ExclusiveStartKey'] = last_evaluated_key
+
+        print(f"Successfully deleted {deleted_count} feed events")
+        return deleted_count
+
+    except ClientError as e:
+        print(f"Error deleting feed events from DynamoDB: {e}")
+        raise e
+    except Exception as e:
+        print(f"An unexpected error occurred while deleting feed events: {e}")
         raise e

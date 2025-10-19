@@ -41,6 +41,7 @@ const emailInput = document.getElementById('emailInput');
 const editEmailButton = document.getElementById('editEmailButton');
 const saveEmailButton = document.getElementById('saveEmailButton');
 const cancelEmailButton = document.getElementById('cancelEmailButton');
+const deleteAllEventsButton = document.getElementById('deleteAllEventsButton');
 // --- END Configuration Elements ---
 
 
@@ -902,6 +903,60 @@ emailNotificationsToggle.addEventListener('change', async (e) => {
     }
 
     await setEmailConfig(currentEmail, enabled);
+});
+
+deleteAllEventsButton.addEventListener('click', async () => {
+    // Show confirmation modal using the custom modal
+    const confirmed = confirm('⚠️ WARNING: This will permanently delete ALL feeding events from the database.\n\nThis action CANNOT be undone.\n\nAre you absolutely sure you want to continue?');
+
+    if (!confirmed) {
+        return;
+    }
+
+    // Double confirmation for extra safety
+    const doubleConfirmed = confirm('This is your last chance!\n\nClick OK to permanently delete ALL feeding events, or Cancel to abort.');
+
+    if (!doubleConfirmed) {
+        return;
+    }
+
+    // Disable button during deletion
+    deleteAllEventsButton.disabled = true;
+    const originalText = deleteAllEventsButton.textContent;
+    deleteAllEventsButton.textContent = 'Deleting...';
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/v1/feed_history/delete_all`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+        }
+
+        const data = await response.json();
+        console.log('Delete response:', data);
+
+        // Refresh the feed history to show empty state
+        await fetchFeedHistory(1);
+
+        // Also refresh chart if in chart view
+        if (currentView === 'chart') {
+            await loadChartData(currentTimeInterval);
+        }
+
+        showModal('Success', `Successfully deleted ${data.deleted_count || 'all'} feeding events.`);
+    } catch (error) {
+        console.error('Error deleting all events:', error);
+        showModal('Error', `Failed to delete events: ${error.message}`);
+    } finally {
+        deleteAllEventsButton.disabled = false;
+        deleteAllEventsButton.textContent = originalText;
+    }
 });
 
 feedButton.addEventListener('click', sendFeedCommand);

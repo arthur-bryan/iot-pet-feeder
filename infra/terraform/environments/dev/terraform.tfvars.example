@@ -1,0 +1,13 @@
+# Project Configuration
+project_name    = "iot-pet-feeder"
+environment     = "dev"
+aws_region      = "us-east-2"
+python_version  = "python3.12"
+
+# GitHub Configuration (for Amplify)
+github_repo_name = "iot-pet-feeder"
+github_owner     = "YOUR_GITHUB_USERNAME"
+github_token     = "YOUR_GITHUB_PERSONAL_ACCESS_TOKEN"
+
+# Notifications
+admin_email = "your-email@example.com"

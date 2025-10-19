@@ -79,8 +79,8 @@ async def set_config_setting(key: str, update_data: ConfigUpdate = Body(...)):
     if config_key == "SERVO_OPEN_HOLD_DURATION_MS":
         try:
             value_int = int(update_data.value)
-            if value_int < 1000 or value_int > 60000:
-                raise HTTPException(status_code=400, detail="Duration must be between 1000 ms and 60000 ms.")
+            if value_int < 1000 or value_int > 10000:
+                raise HTTPException(status_code=400, detail="Duration must be between 1000 ms and 10000 ms (1-10 seconds).")
 
             # Update DynamoDB
             updated_item = await update_config_setting(config_key, value_int)

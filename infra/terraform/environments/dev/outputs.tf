@@ -42,3 +42,8 @@ output "amplify_frontend_url" { # <<< NEW OUTPUT
   description = "The URL of the deployed Amplify frontend application."
   value       = "https://${var.environment}.${module.amplify_app.amplify_app_default_domain}"
 }
+
+output "amplify_app_id" {
+  description = "The Amplify App ID"
+  value       = module.amplify_app.amplify_app_id
+}

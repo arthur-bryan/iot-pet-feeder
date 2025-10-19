@@ -74,8 +74,7 @@ resource "aws_iam_policy" "dynamodb_access_policy" {
           module.feed_history_table.table_arn,
           module.device_status_table.table_arn,
           module.feed_schedule_table.table_arn,
-          module.feed_config_table.table_arn,
-          module.pending_users_table.table_arn # ADDED: Access to pending users table
+          module.feed_config_table.table_arn
         ]
       }
     ]
@@ -129,26 +128,6 @@ resource "aws_iam_role_policy_attachment" "iot_rule_cloudwatch_attach" {
 }
 # --- END NEW IAM Role ---
 
-#
-
-# --- NEW: SNS Topic for Admin Notifications ---
-resource "aws_sns_topic" "admin_notification_topic" {
-  name = "${var.project_name}-AdminApprovalNotifications-${var.environment}"
-
-  tags = {
-    Project = var.project_name
-    Environment = var.environment
-  }
-}
-
-resource "aws_sns_topic_subscription" "admin_email_subscription" {
-  topic_arn = aws_sns_topic.admin_notification_topic.arn
-  protocol  = "email"
-  endpoint  = var.admin_email # Admin's email address
-}
-
-
-
 # --- Module Calls ---
 
 # Lambda Layer for Python Dependencies
@@ -193,15 +172,6 @@ module "feed_config_table" {
   project_name = var.project_name
   table_name   = "${var.project_name}-feed-config-${var.environment}"
   hash_key     = "config_key"
-  hash_key_type = "S"
-}
-
-# NEW: DynamoDB table for pending user registrations
-module "pending_users_table" {
-  source       = "../../modules/dynamodb_table"
-  project_name = var.project_name
-  table_name   = "${var.project_name}-pending-users-${var.environment}"
-  hash_key     = "email"
   hash_key_type = "S"
 }
 
@@ -477,9 +447,36 @@ module "amplify_app" {
   github_repo_url     = data.github_repository.this.html_url
   github_token        = var.github_token
   environment_variables = {
-    VITE_API_BASE_URL        = module.api_gateway.api_gateway_invoke_url,
-    VITE_REGION              = var.aws_region,
-    VITE_GOOGLE_CLIENT_ID    = var.google_client_id, # ADD THIS
+    VITE_API_BASE_URL = module.api_gateway.api_gateway_invoke_url,
+    VITE_REGION       = var.aws_region
+  }
+}
+
+# Trigger Amplify rebuild when API Gateway URL changes
+resource "null_resource" "amplify_rebuild_trigger" {
+  # Trigger rebuild when API Gateway URL changes
+  triggers = {
+    api_gateway_url = module.api_gateway.api_gateway_invoke_url
+  }
+
+  # Wait for both API Gateway and Amplify to be ready
+  depends_on = [
+    module.api_gateway,
+    module.amplify_app
+  ]
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      echo "API Gateway URL changed to: ${module.api_gateway.api_gateway_invoke_url}"
+      echo "Triggering Amplify rebuild to update frontend configuration..."
+
+      # Start Amplify build job
+      aws amplify start-job \
+        --app-id ${module.amplify_app.amplify_app_id} \
+        --branch-name ${var.environment} \
+        --job-type RELEASE \
+        --region ${var.aws_region} || echo "Warning: Could not trigger Amplify rebuild. Run post-deploy.sh manually."
+    EOT
   }
 }
 

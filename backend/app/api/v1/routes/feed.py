@@ -34,19 +34,5 @@ async def read_feed_history(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/feed_history/delete_all")
-async def delete_all_feed_events_endpoint():
-    """
-    Deletes all feed events from the DynamoDB feed history table.
-    This is a destructive operation that cannot be undone.
-    """
-    from app.crud.feed import delete_all_feed_events
-    try:
-        deleted_count = await delete_all_feed_events()
-        return {
-            "success": True,
-            "deleted_count": deleted_count,
-            "message": f"Successfully deleted {deleted_count} feed events"
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error deleting feed events: {str(e)}")
+# delete_all endpoint removed for security - this is a public demo
+# Users should not be able to delete all events from shared infrastructure

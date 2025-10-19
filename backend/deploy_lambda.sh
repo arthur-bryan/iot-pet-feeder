@@ -1,8 +1,23 @@
 #!/bin/bash
 # Deploy backend Lambda function to AWS
+# ⚠️  WARNING: This script only updates Lambda code, not layers or configuration
+# ⚠️  This can cause version drift with Terraform state
+# ⚠️  Recommended: Use deploy_via_terraform.sh instead for production deployments
 
 set -e  # Exit on error
 
+echo "⚠️  WARNING: Manual Lambda Deployment"
+echo "   This script bypasses Terraform and may cause state drift"
+echo "   For production deployments, use: backend/deploy_via_terraform.sh"
+echo ""
+read -p "Continue with manual deployment anyway? (y/n): " -n 1 -r
+echo ""
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "❌ Deployment cancelled. Run backend/deploy_via_terraform.sh instead"
+    exit 1
+fi
+
+echo ""
 echo "🚀 Deploying IoT Pet Feeder API Lambda..."
 
 # Configuration

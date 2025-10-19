@@ -7,15 +7,12 @@
 #include <HX711.h>
 #include <Preferences.h>
 #include <time.h>
+#include "secrets.h"
 
 // Configuration
-const char* WIFI_SSID = "Arthur Bryan";
-const char* WIFI_PASSWORD = "cama#17220321";
 const char* API_BASE_URL = "https://hkwon40nol.execute-api.us-east-2.amazonaws.com/dev/api/v1/config";
 const int API_PORT = 443;
-const char* AWS_IOT_ENDPOINT = "a1mm0cek76sanp-ats.iot.us-east-2.amazonaws.com";
 const int AWS_IOT_PORT = 8883;
-const char* MQTT_CLIENT_ID = "iot-pet-feeder-device-dev";
 const char* MQTT_SUBSCRIBE_TOPIC = "petfeeder/commands";
 const char* MQTT_PUBLISH_TOPIC = "petfeeder/status";
 const char* MQTT_FEED_EVENT_TOPIC = "petfeeder/feed_event";
@@ -48,83 +45,6 @@ const float MINIMAL_FOOD_WEIGHT_G = 10.0;
 const char* NTP_SERVER = "pool.ntp.org";
 const long GMT_OFFSET_SEC = 0;
 const int DAYLIGHT_OFFSET_SEC = 0;
-
-// Certificates
-const char* AWS_ROOT_CA = R"EOF(
------BEGIN CERTIFICATE-----
-MIIDQTCCAimgAwIBAgITBmyfz5m/jAo54vB4ikPmljZbyjANBgkqhkiG9w0BAQsF
-ADA5MQswCQYDVQQGEwJVUzEPMA0GA1UEChMGQW1hem9uMRkwFwYDVQQDExBBbWF6
-b24gUm9vdCBDQSAxMB4XDTE1MDUyNjAwMDAwMFoXDTM4MDExNzAwMDAwMFowOTEL
-MAkGA1UEBhMCVVMxDzANBgNVBAoTBkFtYXpvbjEZMBcGA1UEAxMQQW1hem9uIFJv
-b3QgQ0EgMTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALJ4gHHKeNXj
-ca9HgFB0fW7Y14h29Jlo91ghYPl0hAEvrAIthtOgQ3pOsqTQNroBvo3bSMgHFzZM
-9O6II8c+6zf1tRn4SWiw3te5djgdYZ6k/oI2peVKVuRF4fn9tBb6dNqcmzU5L/qw
-IFAGbHrQgLKm+a/sRxmPUDgH3KKHOVj4utWp+UhnMJbulHheb4mjUcAwhmahRWa6
-VOujw5H5SNz/0egwLX0tdHA114gk957EWW67c4cX8jJGKLhD+rcdqsq08p8kDi1L
-93FcXmn/6pUCyziKrlA4b9v7LWIbxcceVOF34GfID5yHI9Y/QCB/IIDEgEw+OyQm
-jgSubJrIqg0CAwEAAaNCMEAwDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8EBAMC
-AYYwHQYDVR0OBBYEFIQYzIU07LwMlJQuCFmcx7IQTgoIMA0GCSqGSIb3DQEBCwUA
-A4IBAQCY8jdaQZChGsV2USggNiMOruYou6r4lK5IpDB/G/wkjUu0yKGX9rbxenDI
-U5PMCCjjmCXPI6T53iHTfIUJrU6adTrCC2qJeHZERxhlbI1Bjjt/msv0tadQ1wUs
-N+gDS63pYaACbvXy8MWy7Vu33PqUXHeeE6V/Uq2V8viTO96LXFvKWlJbYK8U90vv
-o/ufQJVtMVT8QtPHRh8jrdkPSHCa2XV4cdFyQzR1bldZwgJcJmApzyMZFo6IQ6XU
-5MsI+yMRQ+hDKXJioaldXgjUkK642M4UwtBV8ob2xJNDd2ZhwLnoQdeXeGADbkpy
-rqXRfboQnoZsG4q5WTP468SQvvG5
------END CERTIFICATE-----
-)EOF";
-
-const char* AWS_CLIENT_CERT = R"KEY(
------BEGIN CERTIFICATE-----
-MIIDWTCCAkGgAwIBAgIUYhZX0yWOat9nqwF4inBPk2So/hQwDQYJKoZIhvcNAQEL
-BQAwTTFLMEkGA1UECwxCQW1hem9uIFdlYiBTZXJ2aWNlcyBPPUFtYXpvbi5jb20g
-SW5jLiBMPVNlYXR0bGUgU1Q9V2FzaGluZ3RvbiBDPVVTMB4XDTI1MDcyNTE5Mjky
-NFoXDTQ5MTIzMTIzNTk1OVowHjEcMBoGA1UEAwwTQVdTIElvVCBDZXJ0aWZpY2F0
-ZTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAOAca/8g+ZI09mQ0nrL3
-hqhHXQNzRdcU52S8QDE3R9jJf5Wv/eNtmQCuR6dqcXWzfZbLvy4M13KXNmrLp2I1
-Ydd3v57zyyhp0F5sx8j8yxYH1aziFBOl/mqL0kL5k7pklK81CvpxLogdy/GxrIYm
-6BAnWq4xwha5GC+hrUjXyNouwHM/LT2al5121IIYNBkf9ssToJqyOplNswtxDORG
-MqphQTy3zbaC5HCrYgdJhhK2utFa6WhFogQrqIzJ1Y1QsPEK7pTxU8hKkjGfIFB9
-LhRtQcCK8+pZOHR8+tjxzjMfDTkLVlfQ7safywTMf1FIJz3EG+LIqYXk9YCgsoei
-XlcCAwEAAaNgMF4wHwYDVR0jBBgwFoAUwBh4Ln3RnThx3vpQOXRkEFu+9ZEwHQYD
-VR0OBBYEFOAx7VPUiRh5HnP0OQ19lQSAu4LvMAwGA1UdEwEB/wQCMAAwDgYDVR0P
-AQH/BAQDAgeAMA0GCSqGSIb3DQEBCwUAA4IBAQAqTrN6eWvdTnlLprGVItdFQzRO
-/CLvbEvBFxB92HhWtc7XwttOdPPnMzueCbc4OQYC4OGzkxQVqQW+sQHyik5XtiKc
-e0hZc2tRtfru0f1752eyIDjoqFGBrIBAPe6Z1A4bxOtpnKPh92JLUqGK4w4OD/oR
-abrzkKKRhCUXWVw12acaZmRXlvMsfWt1ydbcnKAKv2pjzNd1SW6prdWuvTj6MeIe
-GHycqXBoLMkxzKp1i+kjHtxeuKMF6FbLcchRmcg2rQq1QmGUKVnyLLphXTVQmcGI
-IkQKPIN2dXEmr1QcPQYDrxkq05ym/2uzSdjCf15XLI20CbhoxkkqfuMyBMCR
------END CERTIFICATE-----
-)KEY";
-
-const char* AWS_PRIVATE_KEY = R"KEY(
------BEGIN RSA PRIVATE KEY-----
-MIIEpQIBAAKCAQEA4Bxr/yD5kjT2ZDSesveGqEddA3NF1xTnZLxAMTdH2Ml/la/9
-422ZAK5Hp2pxdbN9lsu/LgzXcpc2asunYjVh13e/nvPLKGnQXmzHyPzLFgfVrOIU
-E6X+aovSQvmTumSUrzUK+nEuiB3L8bGshiboECdarjHCFrkYL6GtSNfI2i7Acz8t
-PZqXnXbUghg0GR/2yxOgmrI6mU2zC3EM5EYyqmFBPLfNtoLkcKtiB0mGEra60Vrp
-aEWiBCuojMnVjVCw8QrulPFTyEqSMZ8gUH0uFG1BwIrz6lk4dHz62PHOMx8NOQtW
-V9Duxp/LBMx/UUgnPcQb4sipheT1gKCyh6JeVwIDAQABAoIBAQC9o08/dAe7UFWu
-NViU2B96BekPIlvWxDmJZEJtYvnI17i+UU3lRLhTeyXm5ItdraR4FbCQpw0oSgwi
-EnJxB/ri+NGND365k9BeFm54BHFVEwwcXrHebnf6cJZbVhVLhBDMsXW4tk1JoO0S
-d+YlHocAJEz3WeOClt2AcK7RFMdA1vliHxV4CfBWxb6K9Sau3WwY1z9NrpFm/Njl
-DX3MMheuaqeL5icggVb/fzAlFY3f17s+T1OvEXj5V4rNCT15xnEcV3fXQYPemmuB
-LuUPeL+wT1scZOolFoeiYQdf5v+9xgBwQUIIu+d9ddSQv6q5lfQjAVzTPltwDc08
-jui3A/wBAoGBAPEIVyogrt5SszQjS3rBQXLZHGHNRFYNHmTQOgibacXoU/UU/kOa
-c9xqYLGMguZlZGKwMZP3So8jkPVX6Jzkem86ZZaz1sakDRsLyweulhy4LVxASB+E
-Bvd56VtgXhVdBUgG/rWrY596D/7pUTG85tDqKtJ1R9K7nw3kZAeeKEwRAoGBAO4H
-FPVEqRAmBwlSmH9FPMjT9osA63WoVWsHMA+KYCx/RXpJoyVVVdQrtdzGrZJIjN1F
-mYS4KIjbNcmjk+o0tdsI4v9TnjFoDUMFzIicvhRF39NG8f8LeE6aEzVnOjR037ls
-PlM4xWyUEibHCit8veUOqWOgfTnYHby5NUHa8QvnAoGAegtfF1W1NZ1qX9v/PAje
-uuh0FpF5KJk76pAE0pbe1/brjA01McXjJJg4na4oGcD9M3tDn0h32EKKA7Cfd9G4
-rNlE1yn4dlxaxncSNrGQELqxPSTPYCXZ4TU5k6sX+HlBU1c3YYWGzBliQBCjrCua
-M+5eAHKiC3I09zPN8o2CmgECgYEAnen23o1xuDPyYR357B2sKPRu0WOH0uQd30bC
-fNzp1zuMhYfLA96sdXmWSuVIjA8z3Szqn6Fpyvnbom2ymSPlLm6j4o7AGbkVa0yy
-mEOc22hMCSg9Ll6Wr1cKvVhBxkFvl92XL7EvUUyfCjjsp1M3zHpAqMb1rWWSvP0G
-ty0g1CsCgYEAyNYljyWMqA25zTETEe9EqJbxRam/YUIGxtSTpeUrQCnJ0heReBaD
-vjU1MwazgkKvWJ1k2Ubs3NvcXj/HIFCkCVN2APx7L2yasxBHOvfjsyJoxiOhZ4hp
-mADSyOUTbuEoM087hEIQdK/1DTolyPvnj2hkzsGseEZaeSEQ0dBbfyw=
------END RSA PRIVATE KEY-----
-)KEY";
 
 // Global Objects
 WiFiClientSecure netMqtt, netHttp;
@@ -292,10 +212,10 @@ void setup() {
     digitalWrite(GREEN_LED_PIN, LOW);
     digitalWrite(RED_LED_PIN, HIGH);
 
-    netHttp.setCACert(AWS_ROOT_CA);
-    netMqtt.setCACert(AWS_ROOT_CA);
-    netMqtt.setCertificate(AWS_CLIENT_CERT);
-    netMqtt.setPrivateKey(AWS_PRIVATE_KEY);
+    netHttp.setCACert(AWS_CERT_CA);
+    netMqtt.setCACert(AWS_CERT_CA);
+    netMqtt.setCertificate(AWS_CERT_CRT);
+    netMqtt.setPrivateKey(AWS_CERT_PRIVATE);
 
     mqttClient.begin(AWS_IOT_ENDPOINT, AWS_IOT_PORT, netMqtt);
     mqttClient.onMessage(onMqttMessage);
@@ -388,7 +308,7 @@ void setup() {
         bool mqttConnected = false;
 
         while (!mqttConnected && mqttRetries < 5) {
-            if (mqttClient.connect(MQTT_CLIENT_ID)) {
+            if (mqttClient.connect(THING_NAME)) {
                 mqttConnected = true;
                 Serial.println("\nMQTT OK");
                 mqttClient.subscribe(MQTT_SUBSCRIBE_TOPIC);
@@ -435,7 +355,7 @@ void loop() {
     } else if (!mqttClient.connected()) {
         if (now - lastAWSAttemptTime >= AWS_RECONNECT_DELAY_MS) {
             Serial.println("Attempting MQTT reconnect...");
-            if (mqttClient.connect(MQTT_CLIENT_ID)) {
+            if (mqttClient.connect(THING_NAME)) {
                 Serial.println("MQTT reconnected");
                 mqttClient.subscribe(MQTT_SUBSCRIBE_TOPIC);
                 mqttClient.subscribe(MQTT_CONFIG_TOPIC);

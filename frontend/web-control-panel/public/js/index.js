@@ -787,26 +787,6 @@ async function updateDeviceStatus() {
     return await getCachedStatus();
 }
 
-// --- Authentication & Session Management ---
-
-async function handleLogout() {
-    try {
-        // Ensure Amplify is defined before calling its methods
-        if (typeof Amplify === 'undefined' || !Amplify.Auth) {
-            console.error("Amplify or Amplify.Auth is not defined when handleLogout is called.");
-            showModal('Logout Error', 'Amplify library not fully loaded. Please try again.');
-            return;
-        }
-        await Amplify.Auth.signOut();
-        sessionStorage.removeItem('authenticatedUserEmail');
-        sessionStorage.removeItem('guestUserName');
-        window.location.href = 'login.html';
-    } catch (error) {
-        console.error("Error during logout:", error);
-        showModal('Logout Error', `Failed to log out: ${error.message}`);
-    }
-}
-
 // --- Event Listeners & Initial Load ---
 editDurationButton.addEventListener('click', () => {
     toggleDurationEditMode(true);
@@ -905,59 +885,7 @@ emailNotificationsToggle.addEventListener('change', async (e) => {
     await setEmailConfig(currentEmail, enabled);
 });
 
-deleteAllEventsButton.addEventListener('click', async () => {
-    // Show confirmation modal using the custom modal
-    const confirmed = confirm('⚠️ WARNING: This will permanently delete ALL feeding events from the database.\n\nThis action CANNOT be undone.\n\nAre you absolutely sure you want to continue?');
-
-    if (!confirmed) {
-        return;
-    }
-
-    // Double confirmation for extra safety
-    const doubleConfirmed = confirm('This is your last chance!\n\nClick OK to permanently delete ALL feeding events, or Cancel to abort.');
-
-    if (!doubleConfirmed) {
-        return;
-    }
-
-    // Disable button during deletion
-    deleteAllEventsButton.disabled = true;
-    const originalText = deleteAllEventsButton.textContent;
-    deleteAllEventsButton.textContent = 'Deleting...';
-
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/feed_history/delete_all`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
-        }
-
-        const data = await response.json();
-        console.log('Delete response:', data);
-
-        // Refresh the feed history to show empty state
-        await fetchFeedHistory(1);
-
-        // Also refresh chart if in chart view
-        if (currentView === 'chart') {
-            await loadChartData(currentTimeInterval);
-        }
-
-        showModal('Success', `Successfully deleted ${data.deleted_count || 'all'} feeding events.`);
-    } catch (error) {
-        console.error('Error deleting all events:', error);
-        showModal('Error', `Failed to delete events: ${error.message}`);
-    } finally {
-        deleteAllEventsButton.disabled = false;
-        deleteAllEventsButton.textContent = originalText;
-    }
-});
+// Delete all events button removed - endpoint disabled for public demo
 
 feedButton.addEventListener('click', sendFeedCommand);
 prevPageButton.addEventListener('click', () => {
@@ -1520,87 +1448,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Initialize timezone picker
     initializeTimezonePicker();
 
-    // Check if Amplify is loaded
-    if (typeof Amplify === 'undefined') {
-        console.warn("Amplify library not loaded yet, waiting...");
-        // Wait a bit for Amplify to load
-        await new Promise(resolve => setTimeout(resolve, 500));
+    // Authentication disabled - all users access as Guest
+    console.log("Authentication disabled. All users access as Guest.");
+    let userLoggedIn = true;
+    currentUserName = "Guest";
 
-        if (typeof Amplify === 'undefined') {
-            console.error("Amplify library failed to load. Continuing without authentication...");
-        }
-    }
-
-    // Define amplifyConfig here, within DOMContentLoaded, to ensure window.ENV is available
-    const amplifyConfig = {
-        Auth: {
-            Cognito: {
-                userPoolId: window.ENV?.VITE_USER_POOL_ID,
-                userPoolClientId: window.ENV?.VITE_USER_POOL_CLIENT_ID,
-                region: window.ENV?.VITE_REGION,
-                identityProviders: {
-                    google: {
-                        clientId: window.ENV?.VITE_GOOGLE_CLIENT_ID,
-                        scopes: ['email', 'profile', 'openid']
-                    }
-                },
-                loginWith: {
-                    oauth: {
-                        domain: `${window.ENV?.VITE_USER_POOL_DOMAIN}.auth.${window.ENV?.VITE_REGION}.amazoncognito.com`,
-                        redirectSignIn: `${window.location.origin}/`,
-                        redirectSignOut: `${window.location.origin}/`,
-                        responseType: 'code'
-                    }
-                }
-            }
-        }
-    };
-
-    // Configure Amplify here, after the library is loaded and DOM is ready
-    if (typeof Amplify !== 'undefined') {
-        Amplify.configure(amplifyConfig);
-        console.log("Amplify configured from index.js DOMContentLoaded.");
-    }
-
-    let userLoggedIn = false;
-
-    // 1. Try to get current Amplify authenticated user
-    if (typeof Amplify !== 'undefined' && Amplify.Auth) {
-        try {
-            console.log("Checking for Amplify authenticated user...");
-            const user = await Amplify.Auth.getCurrentUser();
-            if (user) {
-                console.log("Amplify authenticated user found:", user);
-                currentUserName = user.signInDetails.loginId || user.username || user.attributes.email || "Authenticated User";
-                sessionStorage.setItem('authenticatedUserEmail', currentUserName);
-                sessionStorage.removeItem('guestUserName');
-                userLoggedIn = true;
-            }
-        } catch (error) {
-            console.log("No Amplify authenticated session found or error:", error);
-        }
-    } else {
-        console.log("Amplify not available, skipping authentication check.");
-    }
-
-    // 2. If no Amplify user, check for guest session
-    if (!userLoggedIn) {
-        const storedGuestName = sessionStorage.getItem('guestUserName');
-        if (storedGuestName) {
-            console.log("Guest session found:", storedGuestName);
-            currentUserName = storedGuestName;
-            userLoggedIn = true;
-        }
-    }
-
-    // 3. If no user session, allow access as Guest (authentication disabled)
-    if (!userLoggedIn) {
-        console.log("No user session found. Allowing access as Guest (authentication disabled).");
-        currentUserName = "Guest";
-        userLoggedIn = true;
-    }
-
-    // If a user is logged in (or accessing as guest), load app content
     console.log(`User "${currentUserName}" is accessing the app. Loading app content.`);
     console.log("window.ENV:", window.ENV);
     console.log("API_BASE_URL value:", API_BASE_URL);

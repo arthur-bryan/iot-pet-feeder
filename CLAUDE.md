@@ -53,5 +53,3 @@ Before generating any code, you must confirm you have absorbed the current state
 - Documentations must be clear, concise and completed
 - Project must be easy to replicate
 - Easy to provision, delete, provision again if needed
-
-# 6. Security

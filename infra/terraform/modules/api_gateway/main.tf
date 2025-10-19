@@ -224,79 +224,7 @@ resource "aws_api_gateway_integration_response" "options_feed_history_integratio
 # --- End CORS for /api/v1/feed_history ---
 
 
-# /api/v1/feed_history/delete_all resource
-resource "aws_api_gateway_resource" "feed_history_delete_all_resource" {
-  rest_api_id = aws_api_gateway_rest_api.this.id
-  parent_id   = aws_api_gateway_resource.feed_history_resource.id
-  path_part   = "delete_all"
-}
-
-# DELETE /api/v1/feed_history/delete_all
-resource "aws_api_gateway_method" "delete_feed_history_delete_all_method" {
-  rest_api_id   = aws_api_gateway_rest_api.this.id
-  resource_id   = aws_api_gateway_resource.feed_history_delete_all_resource.id
-  http_method   = "DELETE"
-  authorization = "NONE"
-}
-
-resource "aws_api_gateway_integration" "delete_feed_history_delete_all_integration" {
-  rest_api_id             = aws_api_gateway_rest_api.this.id
-  resource_id             = aws_api_gateway_resource.feed_history_delete_all_resource.id
-  http_method             = aws_api_gateway_method.delete_feed_history_delete_all_method.http_method
-  integration_http_method = "POST"
-  type                    = "AWS_PROXY"
-  uri                     = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.lambda_invoke_arn}/invocations"
-}
-
-# --- CORS for /api/v1/feed_history/delete_all ---
-resource "aws_api_gateway_method" "options_feed_history_delete_all_method" {
-  rest_api_id   = aws_api_gateway_rest_api.this.id
-  resource_id   = aws_api_gateway_resource.feed_history_delete_all_resource.id
-  http_method   = "OPTIONS"
-  authorization = "NONE"
-  request_models = {
-    "application/json" = "Error"
-  }
-}
-
-resource "aws_api_gateway_integration" "options_feed_history_delete_all_integration" {
-  rest_api_id             = aws_api_gateway_rest_api.this.id
-  resource_id             = aws_api_gateway_resource.feed_history_delete_all_resource.id
-  http_method             = aws_api_gateway_method.options_feed_history_delete_all_method.http_method
-  type                    = "MOCK"
-  request_templates = {
-    "application/json" = "{ \"statusCode\": 200 }"
-  }
-}
-
-resource "aws_api_gateway_method_response" "options_feed_history_delete_all_200" {
-  rest_api_id = aws_api_gateway_rest_api.this.id
-  resource_id = aws_api_gateway_resource.feed_history_delete_all_resource.id
-  http_method = aws_api_gateway_method.options_feed_history_delete_all_method.http_method
-  status_code = "200"
-  response_parameters = {
-    "method.response.header.Access-Control-Allow-Headers" = true,
-    "method.response.header.Access-Control-Allow-Methods" = true,
-    "method.response.header.Access-Control-Allow-Origin"  = true
-  }
-}
-
-resource "aws_api_gateway_integration_response" "options_feed_history_delete_all_integration_200" {
-  rest_api_id = aws_api_gateway_rest_api.this.id
-  resource_id = aws_api_gateway_resource.feed_history_delete_all_resource.id
-  http_method = aws_api_gateway_method.options_feed_history_delete_all_method.http_method
-  status_code = aws_api_gateway_method_response.options_feed_history_delete_all_200.status_code
-  response_templates = {
-    "application/json" = ""
-  }
-  response_parameters = {
-    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
-    "method.response.header.Access-Control-Allow-Methods" = "'OPTIONS,DELETE'",
-    "method.response.header.Access-Control-Allow-Origin"  = "'*'"
-  }
-  depends_on = [aws_api_gateway_integration.options_feed_history_delete_all_integration]
-}
-# --- End CORS for /api/v1/feed_history/delete_all ---
+# delete_all endpoint removed for public demo security
 
 
 # --- NEW: API Gateway Methods for /api/v1/schedules ---
@@ -768,7 +696,6 @@ resource "aws_api_gateway_deployment" "this" {
   depends_on = [
     aws_api_gateway_integration.post_feed_integration,
     aws_api_gateway_integration.get_feed_history_integration,
-    aws_api_gateway_integration.delete_feed_history_delete_all_integration,
     aws_api_gateway_integration.get_status_integration,
     aws_api_gateway_integration.post_status_request_integration,
     aws_api_gateway_integration.options_feed_integration,
@@ -780,7 +707,6 @@ resource "aws_api_gateway_deployment" "this" {
     aws_api_gateway_integration.options_schedules_integration,
     aws_api_gateway_integration.options_schedules_proxy_integration,
     aws_api_gateway_integration.options_feed_history_integration,
-    aws_api_gateway_integration.options_feed_history_delete_all_integration,
     aws_api_gateway_integration.get_config_key_integration,
     aws_api_gateway_integration.put_config_key_integration,
     aws_api_gateway_integration.options_config_key_integration,
@@ -796,7 +722,6 @@ resource "aws_api_gateway_deployment" "this" {
       aws_api_gateway_resource.v1_resource.id,
       aws_api_gateway_resource.feed_resource.id,
       aws_api_gateway_resource.feed_history_resource.id,
-      aws_api_gateway_resource.feed_history_delete_all_resource.id,
       aws_api_gateway_resource.schedules_resource.id,
       aws_api_gateway_resource.schedules_proxy_resource.id,
       aws_api_gateway_resource.status_resource.id,
@@ -807,7 +732,6 @@ resource "aws_api_gateway_deployment" "this" {
       aws_api_gateway_resource.notifications_proxy_resource.id,
       aws_api_gateway_method.post_feed_method.id,
       aws_api_gateway_method.get_feed_history_method.id,
-      aws_api_gateway_method.delete_feed_history_delete_all_method.id,
       aws_api_gateway_method.get_status_method.id,
       aws_api_gateway_method.post_status_request_method.id,
       aws_api_gateway_method.options_feed_method.id,
@@ -819,7 +743,6 @@ resource "aws_api_gateway_deployment" "this" {
       aws_api_gateway_method.options_schedules_method.id,
       aws_api_gateway_method.options_schedules_proxy_method.id,
       aws_api_gateway_method.options_feed_history_method.id,
-      aws_api_gateway_method.options_feed_history_delete_all_method.id,
       aws_api_gateway_method.get_config_key_method.id,
       aws_api_gateway_method.put_config_key_method.id,
       aws_api_gateway_method.options_config_key_method.id,

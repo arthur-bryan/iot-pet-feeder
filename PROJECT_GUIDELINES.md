@@ -1,4 +1,4 @@
-# Project Guidelines: Smart Pet Feeder - Cloud & Embedded System
+     # Project Guidelines: Smart Pet Feeder - Cloud & Embedded System
 
 ## 1. Architectural Mandate & Key Tenets
 

@@ -246,3 +246,6 @@ plan
 # Build artifacts
 lambda_deploy_package/
 lambda_package.zip
+
+# ESP32 secrets (auto-generated)
+firmware/esp32-feeder/iot-pet-feeder/secrets.h

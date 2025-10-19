@@ -88,7 +88,7 @@ function startPolling() {
 
     console.log("⏰ Starting event-driven polling strategy");
     console.log("   - Device status: every 3 seconds (real-time feel)");
-    console.log("   - Feed history: every 60 seconds (minimal polling)");
+    console.log("   - Feed history: every 10 seconds (catch consumption/refill events)");
     console.log("   - Aggressive mode: 1s polling after user actions");
     console.log("   - Polling stops when tab is hidden to save costs");
 
@@ -101,13 +101,13 @@ function startPolling() {
         }
     }, 3000);
 
-    // Feed history: every 60 seconds (minimal polling)
+    // Feed history: every 10 seconds to catch consumption/refill events faster
     historyPollingInterval = setInterval(() => {
         if (isPageVisible && !aggressivePollingActive) {
             console.log("Auto-refresh: Fetching feed history...");
             fetchFeedHistory(currentPage);
         }
-    }, 60000);
+    }, 10000);
 }
 
 // Start aggressive polling after user actions (feed button, config changes)
@@ -1283,7 +1283,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log("   - Polling pauses when tab is hidden");
     console.log("   - Device status: 3s intervals for real-time feel (1200 req/hr base)");
     console.log("   - Aggressive mode: 1s polling for 15-20s after actions");
-    console.log("   - Feed history: 60s intervals (60 req/hr)");
-    console.log("   - ESP32 now publishes on events (weight changes, servo state)");
-    console.log("   - Total: ~1260 req/hr idle, peaks during active use");
+    console.log("   - Feed history: 10s intervals (360 req/hr)");
+    console.log("   - ESP32 publishes events (consumption, refill, manual_feed)");
+    console.log("   - Total: ~1560 req/hr idle, peaks during active use");
 });

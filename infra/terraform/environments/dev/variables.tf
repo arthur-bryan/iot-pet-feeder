@@ -38,6 +38,7 @@ variable "github_token" {
   description = "GitHub Personal Access Token with 'repo' scope for Amplify to connect to the repository. Store as GitHub Secret."
   type        = string
   sensitive   = true
+  default     = ""  # Optional - only needed for Amplify deployment
 }
 
 variable "build_dir" {
@@ -58,17 +59,19 @@ variable "status_lambda_zip_name" {
   default     = "status-lambda-deployment-package.zip"
 }
 
-# NEW: Variables for Cognito Integration
+# Variables for Cognito Integration (optional - only if using Cognito)
 variable "google_client_id" {
   description = "Google OAuth 2.0 Client ID for Cognito Identity Provider. Store as GitHub Secret."
   type        = string
   sensitive   = true
+  default     = ""  # Optional - only needed if using Cognito
 }
 
 variable "google_client_secret" {
   description = "Google OAuth 2.0 Client Secret for Cognito Identity Provider. Store as GitHub Secret."
   type        = string
   sensitive   = true
+  default     = ""  # Optional - only needed if using Cognito
 }
 
 variable "admin_email" {

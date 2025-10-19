@@ -810,18 +810,27 @@ const customEndTime = document.getElementById('customEndTime');
 const applyCustomRange = document.getElementById('applyCustomRange');
 
 function switchView(newView) {
+    console.log('=== switchView CALLED ===');
+    console.log('Switching to view:', newView);
+    console.log('Current view was:', currentView);
+
     currentView = newView;
     viewTypeSelect.value = newView;
 
     if (newView === 'table') {
+        console.log('Switching to TABLE view');
         tableViewContainer.classList.remove('hidden');
         chartViewContainer.classList.add('hidden');
         timeRangeFilters.classList.add('hidden');
         fetchFeedHistory(currentPage);
     } else if (newView === 'chart') {
+        console.log('Switching to CHART view');
+        console.log('Chart container classes before:', chartViewContainer.className);
         tableViewContainer.classList.add('hidden');
         chartViewContainer.classList.remove('hidden');
         timeRangeFilters.classList.remove('hidden');
+        console.log('Chart container classes after:', chartViewContainer.className);
+        console.log('About to call loadChartData with interval:', currentTimeInterval);
         loadChartData(currentTimeInterval);
     }
 }
@@ -869,8 +878,16 @@ function getTimeRange(interval) {
 }
 
 async function loadChartData(interval, customRange = null) {
+    console.log('=== loadChartData CALLED ===');
+    console.log('Interval:', interval, 'Custom range:', customRange);
+    console.log('Chart.js available?', typeof Chart !== 'undefined');
+
     const chartLoadingMessage = document.getElementById('chartLoadingMessage');
-    chartLoadingMessage.classList.remove('hidden');
+    if (chartLoadingMessage) {
+        chartLoadingMessage.classList.remove('hidden');
+    } else {
+        console.error('chartLoadingMessage element not found!');
+    }
 
     try {
         let url, timeRange;
@@ -909,6 +926,15 @@ function renderWeightChart(feedEvents, timeRange) {
     console.log('=== renderWeightChart CALLED ===');
     console.log('Total feedEvents received:', feedEvents.length);
     console.log('Time range:', timeRange);
+
+    // Check if Chart.js is loaded
+    if (typeof Chart === 'undefined') {
+        console.error('CRITICAL ERROR: Chart.js library is not loaded! typeof Chart:', typeof Chart);
+        console.error('window.Chart:', window.Chart);
+        showModal('Chart Error', 'Chart.js library failed to load. Please refresh the page.');
+        return;
+    }
+    console.log('Chart.js is loaded. Version:', Chart.version);
 
     const canvas = document.getElementById('weightChart');
     if (!canvas) {

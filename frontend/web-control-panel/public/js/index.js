@@ -516,7 +516,7 @@ async function fetchEmailConfig() {
     }
 }
 
-async function setEmailConfig(email, enabled) {
+async function subscribeToNotifications(email) {
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
@@ -524,6 +524,44 @@ async function setEmailConfig(email, enabled) {
         return false;
     }
 
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/v1/notifications/subscribe`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ email })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+        }
+
+        const data = await response.json();
+        console.log("Subscription response:", data);
+
+        // Save subscription info to config
+        const config = { email, subscription_arn: data.subscription_arn, enabled: false };
+        await fetch(`${API_BASE_URL}/api/v1/config/EMAIL_NOTIFICATIONS`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ value: JSON.stringify(config), key: "EMAIL_NOTIFICATIONS" })
+        });
+
+        showModal('Subscription Pending', 'Please check your email and click the confirmation link from AWS SNS to activate notifications.');
+        return true;
+
+    } catch (error) {
+        console.error("Error subscribing to notifications:", error);
+        showModal('Error', `Failed to subscribe: ${error.message}`);
+        return false;
+    }
+}
+
+async function setEmailConfig(email, enabled) {
     try {
         const config = { email, enabled };
         const response = await fetch(`${API_BASE_URL}/api/v1/config/EMAIL_NOTIFICATIONS`, {
@@ -541,7 +579,7 @@ async function setEmailConfig(email, enabled) {
 
         const data = await response.json();
         console.log("Updated email config:", data);
-        showModal('Success', `Email notifications ${enabled ? 'enabled' : 'disabled'} for ${email}.`);
+        showModal('Success', `Email notifications ${enabled ? 'enabled' : 'disabled'}.`);
         return true;
 
     } catch (error) {
@@ -826,10 +864,13 @@ cancelEmailButton.addEventListener('click', () => {
 
 saveEmailButton.addEventListener('click', async () => {
     const email = emailInput.value.trim();
-    const enabled = emailNotificationsToggle.checked;
-    const success = await setEmailConfig(email, enabled);
+
+    // First subscribe the email to SNS
+    const success = await subscribeToNotifications(email);
     if (success) {
-        emailDisplay.textContent = email;
+        emailDisplay.textContent = `${email} (pending confirmation)`;
+        emailNotificationsToggle.checked = false;
+        emailNotificationsToggle.disabled = true;
         toggleEmailEditMode(false);
     }
 });

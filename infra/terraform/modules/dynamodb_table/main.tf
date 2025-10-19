@@ -8,6 +8,9 @@ resource "aws_dynamodb_table" "this" {
     type = var.hash_key_type
   }
 
+  # Enable DynamoDB Streams if specified
+  stream_enabled   = var.enable_streams
+  stream_view_type = var.enable_streams ? var.stream_view_type : null
 
   tags = {
     Project = var.project_name

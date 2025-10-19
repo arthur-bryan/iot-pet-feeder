@@ -2,7 +2,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.routes import feed
 from app.api.v1.routes import schedule
+from app.api.v1.routes import config
 from app.api.v1.routes import status
+from app.api.v1.routes import notifications
 from app.core.config import settings
 
 app = FastAPI(
@@ -23,7 +25,9 @@ app.add_middleware(
 # Include routers for different API sections
 app.include_router(feed.router, prefix="/api/v1", tags=["Feed"])
 app.include_router(schedule.router, prefix="/api/v1", tags=["Schedule"])
+app.include_router(config.router, prefix="/api/v1", tags=["Config"])
 app.include_router(status.router, prefix="/status", tags=["Status"])
+app.include_router(notifications.router, prefix="/api/v1", tags=["Notifications"])
 
 
 @app.get("/", tags=["Health"])

@@ -1,3 +1,4 @@
+# infra/terraform/environments/dev/main.tf
 provider "aws" {
   region = var.aws_region
 }
@@ -25,7 +26,7 @@ resource "aws_s3_bucket" "lambda_deployment_bucket" {
 
   tags = {
     Project = var.project_name
-    Environment = var.environment
+    Environment = var.environment # Using the new environment variable
   }
 }
 
@@ -72,28 +73,146 @@ resource "aws_iam_policy" "dynamodb_access_policy" {
         Resource = [
           module.feed_history_table.table_arn,
           module.device_status_table.table_arn,
-          module.feed_schedule_table.table_arn
+          module.feed_schedule_table.table_arn,
+          module.feed_config_table.table_arn,
+          module.pending_users_table.table_arn # ADDED: Access to pending users table
         ]
       }
     ]
   })
 }
 
+# --- NEW: IAM Role for IoT Rule CloudWatch Error Action ---
+resource "aws_iam_role" "iot_rule_cloudwatch_role" {
+  name = "${var.project_name}-IoTRuleCloudWatchRole-${var.environment}"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Action = "sts:AssumeRole",
+        Effect = "Allow",
+        Principal = {
+          Service = "iot.amazonaws.com" # Allow IoT service to assume this role
+        }
+      }
+    ]
+  })
+
+  tags = {
+    Project = var.project_name
+    Environment = var.environment
+  }
+}
+
+resource "aws_iam_policy" "iot_rule_cloudwatch_policy" {
+  name        = "${var.project_name}-IoTRuleCloudWatchPolicy-${var.environment}"
+  description = "IAM policy for IoT Rule to publish to CloudWatch Alarms"
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Action = [
+          "cloudwatch:PutMetricAlarm"
+        ],
+        Effect = "Allow",
+        Resource = "*" # Or restrict to specific alarm ARNs if known
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "iot_rule_cloudwatch_attach" {
+  role       = aws_iam_role.iot_rule_cloudwatch_role.name
+  policy_arn = aws_iam_policy.iot_rule_cloudwatch_policy.arn
+}
+# --- END NEW IAM Role ---
+
+# --- NEW: IAM Policy for Cognito Pre-Sign-up Lambda ---
+resource "aws_iam_policy" "cognito_pre_sign_up_lambda_policy" {
+  name        = "${var.project_name}-CognitoPreSignUpLambdaPolicy-${var.environment}"
+  description = "IAM policy for Cognito Pre-Sign-up Lambda to manage users and send notifications"
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Action = [
+          "cognito-idp:AdminConfirmSignUp",
+          "cognito-idp:AdminDisableUser", # For potential future rejection logic
+          "cognito-idp:ListUsers" # To check for existing users/admin
+        ],
+        Effect = "Allow",
+        Resource = module.cognito_user_pool.user_pool_arn
+      },
+      {
+        Action = [
+          "dynamodb:PutItem",
+          "dynamodb:GetItem",
+          "dynamodb:UpdateItem",
+          "dynamodb:Scan" # For checking pending users
+        ],
+        Effect = "Allow",
+        Resource = module.pending_users_table.table_arn
+      },
+      {
+        Action = [
+          "ses:SendEmail", # For sending approval emails (if using SES directly)
+          "sns:Publish"    # For publishing to SNS topic (if using SNS for emails)
+        ],
+        Effect = "Allow",
+        Resource = aws_sns_topic.admin_notification_topic.arn # Allow publishing to the SNS topic
+      }
+    ]
+  })
+}
+
+# --- NEW: SNS Topic for Admin Notifications ---
+resource "aws_sns_topic" "admin_notification_topic" {
+  name = "${var.project_name}-AdminApprovalNotifications-${var.environment}"
+
+  tags = {
+    Project = var.project_name
+    Environment = var.environment
+  }
+}
+
+resource "aws_sns_topic_subscription" "admin_email_subscription" {
+  topic_arn = aws_sns_topic.admin_notification_topic.arn
+  protocol  = "email"
+  endpoint  = var.admin_email # Admin's email address
+}
+
+
+
 # --- Module Calls ---
+
+# Lambda Layer for Python Dependencies
+module "python_dependencies_layer" {
+  source            = "../../modules/lambda_layer"
+  project_name      = var.project_name
+  layer_name        = "${var.project_name}-python-deps-${var.environment}"
+  s3_bucket_id      = aws_s3_bucket.lambda_deployment_bucket.id
+  requirements_file = "../../../../backend/requirements.txt"
+  runtime           = var.python_version
+}
 
 # DynamoDB Tables
 module "feed_history_table" {
   source       = "../../modules/dynamodb_table"
   project_name = var.project_name
-  table_name   = "${var.project_name}-FeedHistory-${var.environment}"
+  table_name   = "${var.project_name}-feed-history-${var.environment}"
   hash_key     = "feed_id"
   hash_key_type = "S"
+  enable_streams = true  # Enable streams for email notifications
+  stream_view_type = "NEW_IMAGE"
 }
 
 module "device_status_table" {
   source       = "../../modules/dynamodb_table"
   project_name = var.project_name
-  table_name   = "${var.project_name}-DeviceStatus-${var.environment}"
+  table_name   = "${var.project_name}-device-status-${var.environment}" # Corrected table name for consistency
   hash_key     = "thing_id"
   hash_key_type = "S"
 }
@@ -101,8 +220,25 @@ module "device_status_table" {
 module "feed_schedule_table" {
   source       = "../../modules/dynamodb_table"
   project_name = var.project_name
-  table_name   = "${var.project_name}-FeedSchedules-${var.environment}"
+  table_name   = "${var.project_name}-feed-schedules-${var.environment}" # Corrected table name for consistency
   hash_key     = "schedule_id"
+  hash_key_type = "S"
+}
+
+module "feed_config_table" {
+  source       = "../../modules/dynamodb_table"
+  project_name = var.project_name
+  table_name   = "${var.project_name}-feed-config-${var.environment}"
+  hash_key     = "config_key"
+  hash_key_type = "S"
+}
+
+# NEW: DynamoDB table for pending user registrations
+module "pending_users_table" {
+  source       = "../../modules/dynamodb_table"
+  project_name = var.project_name
+  table_name   = "${var.project_name}-pending-users-${var.environment}"
+  hash_key     = "email"
   hash_key_type = "S"
 }
 
@@ -112,8 +248,8 @@ module "iot_device" {
   project_name    = var.project_name
   aws_region      = var.aws_region
   aws_account_id  = data.aws_caller_identity.current.account_id
-  thing_name      = "${var.project_name}-Device-${var.environment}"
-  policy_name     = "${var.project_name}-DevicePolicy-${var.environment}"
+  thing_name      = "${var.project_name}-device-${var.environment}"
+  policy_name     = "${var.project_name}-device-policy-${var.environment}"
   publish_topic   = "petfeeder/commands"
   subscribe_topic = "petfeeder/status"
 }
@@ -126,26 +262,51 @@ module "api_lambda" {
   aws_account_id        = data.aws_caller_identity.current.account_id
   function_name         = "${var.project_name}-api-${var.environment}"
   s3_bucket_id          = aws_s3_bucket.lambda_deployment_bucket.id
-  local_zip_path        = "../../${var.build_dir}/${var.api_lambda_zip_name}"
-  s3_key                = var.api_lambda_zip_name
+  source_path           = "../../../../backend"
   handler               = "lambda_handler.handler"
   runtime               = var.python_version
   timeout               = 30
   memory_size           = 256
+  layer_arns            = [module.python_dependencies_layer.layer_arn]
   environment_variables = {
     PROJECT_NAME             = var.project_name,
-    AWS_REGION               = var.aws_region,
     IOT_ENDPOINT             = data.aws_iot_endpoint.iot_data_endpoint.endpoint_address,
     IOT_PUBLISH_TOPIC        = "petfeeder/commands",
     IOT_THING_ID             = module.iot_device.thing_name,
-    FEED_HISTORY_TABLE_NAME  = module.feed_history_table.table_name,
+    DYNAMO_FEED_HISTORY_TABLE  = module.feed_history_table.table_name,
     DEVICE_STATUS_TABLE_NAME = module.device_status_table.table_name,
-    FEED_SCHEDULE_TABLE_NAME = module.feed_schedule_table.table_name
+    DYNAMO_FEED_SCHEDULE_TABLE = module.feed_schedule_table.table_name,
+    DYNAMO_FEED_CONFIG_TABLE_NAME = module.feed_config_table.table_name,
+    SNS_TOPIC_ARN            = aws_sns_topic.feed_notification_topic.arn
   }
   attached_policy_arns = [
     aws_iam_policy.iot_publish_policy.arn,
-    aws_iam_policy.dynamodb_access_policy.arn
+    aws_iam_policy.dynamodb_access_policy.arn,
+    aws_iam_policy.sns_manage_subscriptions_policy.arn
   ]
+}
+
+# NEW: IAM Policy for API Lambda to manage SNS subscriptions
+resource "aws_iam_policy" "sns_manage_subscriptions_policy" {
+  name        = "${var.project_name}-sns-manage-subscriptions-policy-${var.environment}"
+  description = "IAM policy for API Lambda to manage SNS subscriptions"
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Action = [
+          "sns:Subscribe",
+          "sns:Unsubscribe",
+          "sns:ListSubscriptionsByTopic"
+        ],
+        Effect = "Allow",
+        Resource = [
+          aws_sns_topic.feed_notification_topic.arn
+        ]
+      }
+    ]
+  })
 }
 
 # IoT Status Updater Lambda
@@ -156,15 +317,14 @@ module "status_lambda" {
   aws_account_id        = data.aws_caller_identity.current.account_id
   function_name         = "${var.project_name}-iot-status-updater-${var.environment}"
   s3_bucket_id          = aws_s3_bucket.lambda_deployment_bucket.id
-  local_zip_path        = "../../${var.build_dir}/${var.status_lambda_zip_name}"
-  s3_key                = var.status_lambda_zip_name
-  handler               = "status_updater.handler"
+  source_path           = "../../../../backend"
+  handler               = "status_updater.handler" # This will be a new Python file
   runtime               = var.python_version
   timeout               = 10
   memory_size           = 128
+  layer_arns            = [module.python_dependencies_layer.layer_arn]
   environment_variables = {
     PROJECT_NAME             = var.project_name,
-    AWS_REGION               = var.aws_region,
     DEVICE_STATUS_TABLE_NAME = module.device_status_table.table_name,
     IOT_THING_ID             = module.iot_device.thing_name
   }
@@ -172,6 +332,128 @@ module "status_lambda" {
     aws_iam_policy.dynamodb_access_policy.arn
   ]
 }
+
+# Feed Event Logger Lambda
+module "feed_event_logger_lambda" {
+  source                = "../../modules/lambda"
+  project_name          = var.project_name
+  aws_region            = var.aws_region
+  aws_account_id        = data.aws_caller_identity.current.account_id
+  function_name         = "${var.project_name}-feed-event-logger-${var.environment}"
+  s3_bucket_id          = aws_s3_bucket.lambda_deployment_bucket.id
+  source_path           = "../../../../backend"
+  handler               = "feed_event_logger.handler"
+  runtime               = var.python_version
+  timeout               = 10
+  memory_size           = 128
+  layer_arns            = [module.python_dependencies_layer.layer_arn]
+  environment_variables = {
+    PROJECT_NAME                = var.project_name,
+    DYNAMO_FEED_HISTORY_TABLE   = module.feed_history_table.table_name
+  }
+  attached_policy_arns = [
+    aws_iam_policy.dynamodb_access_policy.arn
+  ]
+}
+
+# NEW: Lambda for Cognito Pre-Sign-up Trigger
+module "pre_sign_up_lambda" {
+  source                = "../../modules/lambda"
+  project_name          = var.project_name
+  aws_region            = var.aws_region
+  aws_account_id        = data.aws_caller_identity.current.account_id
+  function_name         = "${var.project_name}-cognito-pre-sign-up-${var.environment}"
+  s3_bucket_id          = aws_s3_bucket.lambda_deployment_bucket.id
+  source_path           = "../../../../backend" # Assuming pre_sign_up_handler.py will be in backend root
+  handler               = "pre_sign_up_handler.handler" # This will be a new Python file
+  runtime               = var.python_version
+  timeout               = 10
+  memory_size           = 128
+  layer_arns            = [module.python_dependencies_layer.layer_arn]
+  environment_variables = {
+    PROJECT_NAME             = var.project_name,
+    ADMIN_EMAIL              = var.admin_email,
+    PENDING_USERS_TABLE_NAME = module.pending_users_table.table_name,
+    SNS_TOPIC_ARN            = aws_sns_topic.admin_notification_topic.arn
+  }
+  attached_policy_arns = [
+    aws_iam_policy.cognito_pre_sign_up_lambda_policy.arn,
+    # Add CloudWatch logging policy if not already handled by the lambda module
+  ]
+}
+
+# NEW: SNS Topic for Feed Event Email Notifications
+resource "aws_sns_topic" "feed_notification_topic" {
+  name = "${var.project_name}-FeedNotifications-${var.environment}"
+
+  tags = {
+    Project = var.project_name
+    Environment = var.environment
+  }
+}
+
+# NEW: Lambda for Feed Event Email Notifications
+module "feed_notifier_lambda" {
+  source                = "../../modules/lambda"
+  project_name          = var.project_name
+  aws_region            = var.aws_region
+  aws_account_id        = data.aws_caller_identity.current.account_id
+  function_name         = "${var.project_name}-feed-notifier-${var.environment}"
+  s3_bucket_id          = aws_s3_bucket.lambda_deployment_bucket.id
+  source_path           = "../../../../backend"
+  handler               = "feed_notifier.handler"
+  runtime               = var.python_version
+  timeout               = 10
+  memory_size           = 128
+  layer_arns            = [module.python_dependencies_layer.layer_arn]
+  environment_variables = {
+    PROJECT_NAME         = var.project_name,
+    DYNAMO_CONFIG_TABLE  = module.feed_config_table.table_name,
+    SNS_TOPIC_ARN        = aws_sns_topic.feed_notification_topic.arn
+  }
+  attached_policy_arns = [
+    aws_iam_policy.dynamodb_access_policy.arn,
+    aws_iam_policy.sns_publish_policy.arn
+  ]
+}
+
+# NEW: IAM Policy for SNS Publishing
+resource "aws_iam_policy" "sns_publish_policy" {
+  name        = "${var.project_name}-sns-publish-policy-${var.environment}"
+  description = "IAM policy for Lambda to publish to SNS topics"
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Action = [
+          "sns:Publish"
+        ],
+        Effect = "Allow",
+        Resource = [
+          aws_sns_topic.feed_notification_topic.arn
+        ]
+      }
+    ]
+  })
+}
+
+# NEW: DynamoDB Stream Event Source Mapping for Feed Notifier
+resource "aws_lambda_event_source_mapping" "feed_history_stream" {
+  event_source_arn  = module.feed_history_table.stream_arn
+  function_name     = module.feed_notifier_lambda.lambda_arn
+  starting_position = "LATEST"
+  batch_size        = 10
+
+  filter_criteria {
+    filter {
+      pattern = jsonencode({
+        eventName = ["INSERT", "MODIFY"]
+      })
+    }
+  }
+}
+
 
 # API Gateway
 module "api_gateway" {
@@ -182,18 +464,70 @@ module "api_gateway" {
   lambda_invoke_arn    = module.api_lambda.lambda_arn
   lambda_function_name = module.api_lambda.lambda_function_name
   stage_name           = var.environment
+  aws_region           = var.aws_region
+  # No Cognito Authorizer integration here yet, will be a separate step
 }
 
-# IoT Topic Rule
+# IoT Topic Rule for Device Status
 module "iot_status_rule" {
   source                        = "../../modules/iot_rule"
   project_name                  = var.project_name
-  rule_name                     = "${var.project_name}-StatusRule-${var.environment}"
+  rule_name                     = "IoT_StatusRule_${var.environment}"
   rule_description              = "Routes device status messages to a Lambda function for DynamoDB update (${var.environment} environment)."
   mqtt_topic                    = "petfeeder/status"
   lambda_function_arn           = module.status_lambda.lambda_arn
   lambda_function_name_for_permission = module.status_lambda.lambda_function_name
-  lambda_execution_role_arn     = module.status_lambda.lambda_execution_role_arn
+  lambda_execution_role_arn     = aws_iam_role.iot_rule_cloudwatch_role.arn
+}
+
+# IoT Topic Rule for Feed Events
+module "iot_feed_event_rule" {
+  source                        = "../../modules/iot_rule"
+  project_name                  = var.project_name
+  rule_name                     = "IoT_FeedEventRule_${var.environment}"
+  rule_description              = "Routes feed event messages to Lambda for logging (${var.environment} environment)."
+  mqtt_topic                    = "petfeeder/feed_event"
+  lambda_function_arn           = module.feed_event_logger_lambda.lambda_arn
+  lambda_function_name_for_permission = module.feed_event_logger_lambda.lambda_function_name
+  lambda_execution_role_arn     = aws_iam_role.iot_rule_cloudwatch_role.arn
+}
+
+# Schedule Executor Lambda
+module "schedule_executor_lambda" {
+  source                = "../../modules/lambda"
+  project_name          = var.project_name
+  aws_region            = var.aws_region
+  aws_account_id        = data.aws_caller_identity.current.account_id
+  function_name         = "${var.project_name}-schedule-executor-${var.environment}"
+  s3_bucket_id          = aws_s3_bucket.lambda_deployment_bucket.id
+  source_path           = "../../../../backend"
+  handler               = "schedule_executor.handler"
+  runtime               = var.python_version
+  timeout               = 30
+  memory_size           = 256
+  layer_arns            = [module.python_dependencies_layer.layer_arn]
+  environment_variables = {
+    PROJECT_NAME                = var.project_name,
+    DYNAMO_FEED_SCHEDULE_TABLE  = module.feed_schedule_table.table_name,
+    IOT_ENDPOINT                = data.aws_iot_endpoint.iot_data_endpoint.endpoint_address,
+    IOT_TOPIC_FEED              = "petfeeder/commands"
+  }
+  attached_policy_arns = [
+    aws_iam_policy.dynamodb_access_policy.arn,
+    aws_iam_policy.iot_publish_policy.arn
+  ]
+}
+
+# EventBridge Rule to trigger Schedule Executor every minute
+module "schedule_executor_eventbridge" {
+  source                = "../../modules/eventbridge_rule"
+  project_name          = var.project_name
+  environment           = var.environment
+  rule_name             = "${var.project_name}-schedule-executor-rule-${var.environment}"
+  rule_description      = "Triggers schedule executor Lambda every minute to check for due schedules"
+  schedule_expression   = "rate(1 minute)"
+  lambda_function_arn   = module.schedule_executor_lambda.lambda_arn
+  lambda_function_name  = module.schedule_executor_lambda.lambda_function_name
 }
 
 # AWS Amplify App for Frontend
@@ -202,11 +536,52 @@ module "amplify_app" {
   project_name        = var.project_name
   environment         = var.environment
   app_name            = "${var.project_name}-frontend-${var.environment}"
-  github_repo_url     = data.github_repository.this.html_url # Use the URL from the github_repository data source
+  github_repo_url     = data.github_repository.this.html_url
   github_token        = var.github_token
-  # The build_spec default in the module is already configured for your frontend/web-control-panel/public
   environment_variables = {
-    # You can pass frontend environment variables here, e.g.,
-    # VITE_API_BASE_URL = module.api_gateway.api_gateway_invoke_url
+    VITE_API_BASE_URL        = module.api_gateway.api_gateway_invoke_url,
+    VITE_USER_POOL_ID        = module.cognito_user_pool.user_pool_id,
+    VITE_USER_POOL_CLIENT_ID = aws_cognito_user_pool_client.web_client.id, # Keep this
+    VITE_REGION              = var.aws_region,
+    VITE_GOOGLE_CLIENT_ID    = var.google_client_id, # ADD THIS
+    VITE_USER_POOL_DOMAIN    = module.cognito_user_pool.user_pool_domain # ADD THIS
   }
 }
+
+# NEW: Cognito User Pool Module Call
+module "cognito_user_pool" {
+  source               = "../../modules/cognito_user_pool"
+  user_pool_name       = "${var.project_name}-users-${var.environment}"
+  project_name         = var.project_name
+  environment          = var.environment
+  aws_region           = var.aws_region
+  google_client_id     = var.google_client_id
+  google_client_secret = var.google_client_secret
+  # callback_urls and logout_urls are removed from here as they are now in the client resource
+  admin_email          = var.admin_email
+  lambda_pre_sign_up_arn = module.pre_sign_up_lambda.lambda_arn # Link the pre-sign-up Lambda
+}
+
+# NEW: Cognito User Pool Client (moved from module to resolve cycle)
+resource "aws_cognito_user_pool_client" "web_client" {
+  name                                 = "${var.project_name}-web-client-${var.environment}"
+  user_pool_id                         = module.cognito_user_pool.user_pool_id
+  generate_secret                      = false # False for web applications
+  allowed_oauth_flows_user_pool_client = true
+  allowed_oauth_flows                  = ["code", "implicit"]
+  # ADDED: Required OAuth scopes
+  allowed_oauth_scopes                 = ["phone", "email", "openid", "profile", "aws.cognito.signin.user.admin"]
+  # Construct callback/logout URLs using a generic placeholder to break the cycle
+  # IMPORTANT: You MUST update these URLs in the AWS Cognito console AFTER Amplify deployment
+  # to the actual Amplify App URL (e.g., https://<your-amplify-domain>.amplifyapp.com/)
+  callback_urls                        = ["https://example.com/", "https://example.com/oauth2/idpresponse"]
+  logout_urls                          = ["https://example.com/"]
+  supported_identity_providers         = ["COGNITO", "Google"] # Allow Cognito's own login and Google
+  explicit_auth_flows = [ # Essential for custom pre-sign-up flow
+    "ALLOW_ADMIN_USER_PASSWORD_AUTH",
+    "ALLOW_CUSTOM_AUTH",
+    "ALLOW_USER_PASSWORD_AUTH",
+    "ALLOW_REFRESH_TOKEN_AUTH"
+  ]
+}
+

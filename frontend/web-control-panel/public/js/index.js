@@ -882,7 +882,10 @@ async function loadChartData(interval, customRange = null) {
             url = `${API_BASE_URL}/api/v1/feed_history/?start_time=${encodeURIComponent(timeRange.start)}&end_time=${encodeURIComponent(timeRange.end)}&limit=1000`;
         }
 
+        console.log('=== CHART DEBUG ===');
         console.log('Fetching chart data from:', url);
+        console.log('Time range:', timeRange);
+
         const response = await fetch(url);
 
         if (!response.ok) {
@@ -890,7 +893,8 @@ async function loadChartData(interval, customRange = null) {
         }
 
         const data = await response.json();
-        console.log('Chart data received:', data);
+        console.log('Chart data received - total items:', data.items ? data.items.length : 0);
+        console.log('First 3 items:', data.items ? data.items.slice(0, 3) : []);
 
         renderWeightChart(data.items || [], timeRange);
     } catch (error) {
@@ -902,15 +906,37 @@ async function loadChartData(interval, customRange = null) {
 }
 
 function renderWeightChart(feedEvents, timeRange) {
+    console.log('=== renderWeightChart CALLED ===');
+    console.log('Total feedEvents received:', feedEvents.length);
+    console.log('Time range:', timeRange);
+
     const canvas = document.getElementById('weightChart');
+    if (!canvas) {
+        console.error('ERROR: Canvas element #weightChart not found!');
+        return;
+    }
+    console.log('Canvas element found:', canvas);
+
     const ctx = canvas.getContext('2d');
+    console.log('Canvas context:', ctx);
 
     // Filter for completed events with weight data
-    const eventsWithWeight = feedEvents.filter(event =>
-        event.status === 'completed' &&
-        event.weight_after_g !== null &&
-        event.weight_after_g !== undefined
-    );
+    const eventsWithWeight = feedEvents.filter(event => {
+        const isCompleted = event.status === 'completed';
+        const hasWeight = event.weight_after_g !== null && event.weight_after_g !== undefined;
+        if (!isCompleted || !hasWeight) {
+            console.log('Filtered out event:', {
+                feed_id: event.feed_id,
+                status: event.status,
+                weight_after_g: event.weight_after_g,
+                reason: !isCompleted ? 'not completed' : 'no weight data'
+            });
+        }
+        return isCompleted && hasWeight;
+    });
+
+    console.log('After filtering: ' + eventsWithWeight.length + ' events with weight data');
+    console.log('Filtered events:', eventsWithWeight);
 
     // Sort by timestamp
     eventsWithWeight.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
@@ -923,11 +949,16 @@ function renderWeightChart(feedEvents, timeRange) {
         status: event.status
     }));
 
+    console.log('Data points prepared:', dataPoints.length);
+    console.log('First 3 data points:', dataPoints.slice(0, 3));
+
     // Get theme colors
     const isDark = document.documentElement.classList.contains('dark');
     const gridColor = isDark ? 'rgba(75, 85, 99, 0.3)' : 'rgba(229, 231, 235, 0.8)';
     const textColor = isDark ? 'rgba(156, 163, 175, 1)' : 'rgba(75, 85, 99, 1)';
     const lineColor = isDark ? 'rgba(99, 102, 241, 1)' : 'rgba(79, 70, 229, 1)';
+
+    console.log('Theme colors - isDark:', isDark, 'lineColor:', lineColor);
 
     // Destroy existing chart
     if (weightChart) {
@@ -1060,7 +1091,8 @@ function renderWeightChart(feedEvents, timeRange) {
         }
     });
 
-    console.log(`Chart rendered with ${dataPoints.length} data points`);
+    console.log(`✅ Chart creation complete! Data points: ${dataPoints.length}`);
+    console.log('Chart object:', weightChart);
 }
 
 // Event listeners for view controls

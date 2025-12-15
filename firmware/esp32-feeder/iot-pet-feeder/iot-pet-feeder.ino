@@ -792,38 +792,48 @@ void monitorWeightChanges() {
                 }
                 // Detect refill (weight increase)
                 else if (delta > 0 && absDelta > MINIMAL_FOOD_WEIGHT_G) {
-                    generateFeedId(currentFeedId);
+                    // Smart container detection: if weight_before < 5g, container was removed
+                    if (pendingWeightBefore < 5.0) {
+                        // Container placed back on scale - not a refill event
+                        Serial.printf("Container placed back (%.1fg -> %.1fg), not a refill\n",
+                                     pendingWeightBefore, currentWeight);
+                        lastPublishedWeight = currentWeight;
+                        publishDeviceStatus("Container placed", "weight_monitor");
+                    } else {
+                        // Actual refill - container was on scale, weight increased
+                        generateFeedId(currentFeedId);
 
-                    StaticJsonDocument<256> doc;
-                    doc["feed_id"] = currentFeedId;
-                    doc["mode"] = "refill";
-                    doc["requested_by"] = "human";
-                    doc["status"] = "initiated";
-                    doc["trigger_method"] = "weight_monitor";
-                    doc["event_type"] = "refill";
-                    doc["weight_before_g"] = round(pendingWeightBefore * 10.0) / 10.0;
+                        StaticJsonDocument<256> doc;
+                        doc["feed_id"] = currentFeedId;
+                        doc["mode"] = "refill";
+                        doc["requested_by"] = "human";
+                        doc["status"] = "initiated";
+                        doc["trigger_method"] = "weight_monitor";
+                        doc["event_type"] = "refill";
+                        doc["weight_before_g"] = round(pendingWeightBefore * 10.0) / 10.0;
 
-                    char buf[256];
-                    serializeJson(doc, buf);
-                    mqttClient.publish(MQTT_FEED_EVENT_TOPIC, buf);
-                    Serial.printf("Refill initiated: %s\n", buf);
+                        char buf[256];
+                        serializeJson(doc, buf);
+                        mqttClient.publish(MQTT_FEED_EVENT_TOPIC, buf);
+                        Serial.printf("Refill initiated: %s\n", buf);
 
-                    delay(100);
+                        delay(100);
 
-                    doc.clear();
-                    doc["feed_id"] = currentFeedId;
-                    doc["status"] = "completed";
-                    doc["weight_after_g"] = round(currentWeight * 10.0) / 10.0;
+                        doc.clear();
+                        doc["feed_id"] = currentFeedId;
+                        doc["status"] = "completed";
+                        doc["weight_after_g"] = round(currentWeight * 10.0) / 10.0;
 
-                    serializeJson(doc, buf);
-                    mqttClient.publish(MQTT_FEED_EVENT_TOPIC, buf);
-                    Serial.printf("Refill completed: %s\n", buf);
+                        serializeJson(doc, buf);
+                        mqttClient.publish(MQTT_FEED_EVENT_TOPIC, buf);
+                        Serial.printf("Refill completed: %s\n", buf);
 
-                    // Update lastPublishedWeight BEFORE publishing status to prevent duplicate detections
-                    lastPublishedWeight = currentWeight;
+                        // Update lastPublishedWeight BEFORE publishing status to prevent duplicate detections
+                        lastPublishedWeight = currentWeight;
 
-                    // Update device status with new weight
-                    publishDeviceStatus("Food refilled", "weight_monitor");
+                        // Update device status with new weight
+                        publishDeviceStatus("Food refilled", "weight_monitor");
+                    }
                 }
             }
 

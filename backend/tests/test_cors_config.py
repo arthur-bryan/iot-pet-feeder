@@ -1,6 +1,5 @@
 """Tests for CORS configuration."""
 
-import pytest
 from unittest.mock import patch
 
 from app.core.config import Settings

@@ -2,8 +2,7 @@
 Tests for hardware adapter.
 """
 import os
-from decimal import Decimal
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 

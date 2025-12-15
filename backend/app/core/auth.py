@@ -1,13 +1,11 @@
 """Shared authentication utilities."""
 
-import base64
-import json
 import logging
 import os
 
 import boto3
 from botocore.exceptions import ClientError
-from jwt.exceptions import InvalidTokenError, ExpiredSignatureError, InvalidSignatureError
+from jwt.exceptions import ExpiredSignatureError, InvalidSignatureError, InvalidTokenError
 
 from app.core.jwt_verifier import verify_jwt_token
 

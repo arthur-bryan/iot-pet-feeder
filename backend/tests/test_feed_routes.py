@@ -91,6 +91,7 @@ class TestFeedHelpers:
     def test_is_admin_error(self, mock_get_client):
         """Test is_admin returns False on error."""
         from botocore.exceptions import ClientError
+
         from app.core.auth import is_admin
         mock_client = mock_get_client.return_value
         mock_client.admin_list_groups_for_user.side_effect = ClientError(

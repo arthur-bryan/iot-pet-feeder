@@ -2,26 +2,21 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from app.core.exceptions import (
-    SecurityException,
-    ValidationException,
-    sanitize_error,
-    sanitize_aws_error
-)
+from app.core.exceptions import SecurityError, ValidationError, sanitize_aws_error, sanitize_error
 
 
-class TestSecurityException:
-    """Tests for SecurityException class."""
+class TestSecurityError:
+    """Tests for SecurityError class."""
 
     def test_security_exception_basic(self):
-        """Test basic SecurityException creation."""
-        exc = SecurityException("Access denied")
+        """Test basic SecurityError creation."""
+        exc = SecurityError("Access denied")
         assert exc.detail == "Access denied"
         assert exc.status_code == 403
 
     def test_security_exception_with_internal_detail(self):
-        """Test SecurityException with internal detail for logging."""
-        exc = SecurityException(
+        """Test SecurityError with internal detail for logging."""
+        exc = SecurityError(
             detail="Access denied",
             internal_detail="User attempted to access admin endpoint without admin role",
             status_code=403
@@ -30,24 +25,24 @@ class TestSecurityException:
         assert exc.status_code == 403
 
     def test_security_exception_custom_status_code(self):
-        """Test SecurityException with custom status code."""
-        exc = SecurityException("Unauthorized", status_code=401)
+        """Test SecurityError with custom status code."""
+        exc = SecurityError("Unauthorized", status_code=401)
         assert exc.detail == "Unauthorized"
         assert exc.status_code == 401
 
 
-class TestValidationException:
-    """Tests for ValidationException class."""
+class TestValidationError:
+    """Tests for ValidationError class."""
 
     def test_validation_exception_basic(self):
-        """Test basic ValidationException creation."""
-        exc = ValidationException("Invalid input")
+        """Test basic ValidationError creation."""
+        exc = ValidationError("Invalid input")
         assert exc.detail == "Invalid input"
         assert exc.field is None
 
     def test_validation_exception_with_field(self):
-        """Test ValidationException with field name."""
-        exc = ValidationException("Email is required", field="email")
+        """Test ValidationError with field name."""
+        exc = ValidationError("Email is required", field="email")
         assert exc.detail == "Email is required"
         assert exc.field == "email"
 
@@ -89,17 +84,18 @@ class TestExceptionHandlers:
 
     @pytest.mark.asyncio
     async def test_security_exception_handler(self, client):
-        """Test that SecurityException handler returns proper response."""
-        from app.main import security_exception_handler
-        from app.core.exceptions import SecurityException
+        """Test that SecurityError handler returns proper response."""
         from unittest.mock import MagicMock
+
+        from app.core.exceptions import SecurityError
+        from app.main import security_exception_handler
 
         # Create a mock request
         mock_request = MagicMock()
         mock_request.url.path = "/api/v1/test"
 
-        # Create a SecurityException
-        exc = SecurityException("Access denied", status_code=403)
+        # Create a SecurityError
+        exc = SecurityError("Access denied", status_code=403)
 
         # Call the handler directly
         response = await security_exception_handler(mock_request, exc)
@@ -111,8 +107,9 @@ class TestExceptionHandlers:
     @pytest.mark.asyncio
     async def test_global_exception_handler(self, client):
         """Test that global exception handler sanitizes errors."""
-        from app.main import global_exception_handler
         from unittest.mock import MagicMock
+
+        from app.main import global_exception_handler
 
         # Create a mock request
         mock_request = MagicMock()

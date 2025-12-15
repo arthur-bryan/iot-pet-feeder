@@ -8,7 +8,7 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
-class SecurityException(Exception):
+class SecurityError(Exception):
     """Exception for security-related errors with sanitized messages."""
 
     def __init__(self, detail: str, internal_detail: str | None = None, status_code: int = 403):
@@ -28,7 +28,7 @@ class SecurityException(Exception):
             logger.error(f"Security error: {internal_detail}")
 
 
-class ValidationException(Exception):
+class ValidationError(Exception):
     """Exception for input validation errors."""
 
     def __init__(self, detail: str, field: str | None = None):

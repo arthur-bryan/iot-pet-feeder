@@ -1,0 +1,12 @@
+# Ruff configuration
+[lint]
+# Ignore specific rules
+ignore = [
+    "N805",  # Allow 'cls' in Pydantic validators
+    "S310",  # Allow HTTPS URLs in urlopen (false positive for secure HTTPS)
+]
+
+[lint.per-file-ignores]
+# Ignore specific rules in specific files
+"app/api/v1/routes/users.py" = ["N805"]  # Pydantic validators use cls
+"app/core/jwt_verifier.py" = ["S310"]    # HTTPS is secure

@@ -4,7 +4,6 @@ import json
 import time
 from unittest.mock import MagicMock, patch
 
-import jwt
 import pytest
 from jwt.exceptions import (
     DecodeError,

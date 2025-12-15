@@ -2,7 +2,6 @@
 Tests for schedule timezone conversion functionality.
 """
 from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
 
 import pytest
 
@@ -146,8 +145,8 @@ class TestRecurrencePatterns:
 
     def test_daily_recurrence(self):
         """Test daily recurrence calculation."""
-        import sys
         import os
+        import sys
         sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
         from schedule_executor import calculate_next_execution
 
@@ -158,8 +157,8 @@ class TestRecurrencePatterns:
 
     def test_weekly_recurrence(self):
         """Test weekly recurrence calculation."""
-        import sys
         import os
+        import sys
         sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
         from schedule_executor import calculate_next_execution
 
@@ -170,8 +169,8 @@ class TestRecurrencePatterns:
 
     def test_monthly_recurrence(self):
         """Test monthly recurrence calculation."""
-        import sys
         import os
+        import sys
         sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
         from schedule_executor import calculate_next_execution
 
@@ -183,8 +182,8 @@ class TestRecurrencePatterns:
 
     def test_monthly_recurrence_edge_case(self):
         """Test monthly recurrence with day that doesn't exist in next month."""
-        import sys
         import os
+        import sys
         sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
         from schedule_executor import calculate_next_execution
 
@@ -196,8 +195,8 @@ class TestRecurrencePatterns:
 
     def test_none_recurrence(self):
         """Test that 'none' recurrence doesn't change time."""
-        import sys
         import os
+        import sys
         sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
         from schedule_executor import calculate_next_execution
 

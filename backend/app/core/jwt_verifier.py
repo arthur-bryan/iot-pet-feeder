@@ -4,7 +4,6 @@ import json
 import logging
 import os
 import time
-from typing import Dict, Optional
 from urllib.request import urlopen
 
 import jwt
@@ -21,12 +20,12 @@ from jwt.exceptions import (
 
 logger = logging.getLogger(__name__)
 
-_jwks_cache: Optional[Dict] = None
+_jwks_cache: dict | None = None
 _jwks_cache_timestamp: float = 0
 JWKS_CACHE_TTL = 3600  # 1 hour
 
 
-def _get_jwks() -> Dict:
+def _get_jwks() -> dict:
     """Fetch JWKS from Cognito with caching."""
     global _jwks_cache, _jwks_cache_timestamp
 
@@ -72,7 +71,7 @@ def _get_public_key(token: str):
         raise
 
 
-def verify_jwt_token(token: str) -> Optional[Dict]:
+def verify_jwt_token(token: str) -> dict | None:
     """Verify JWT token signature and claims.
 
     Args:
@@ -128,4 +127,4 @@ def verify_jwt_token(token: str) -> Optional[Dict]:
         raise
     except Exception as e:
         logger.error(f"Unexpected JWT verification error: {str(e)}")
-        raise InvalidTokenError(f"Token verification failed: {str(e)}")
+        raise InvalidTokenError(f"Token verification failed: {str(e)}") from e

@@ -194,8 +194,8 @@ def trigger_scheduled_feed(schedule_id: str, feed_cycles: int, requested_by: str
     """
     try:
         # Import feed service and models
-        from app.services.feed_service import process_feed
         from app.models.feed import FeedRequest
+        from app.services.feed_service import process_feed
 
         # Create feed request with mode="scheduled"
         feed_request = FeedRequest(

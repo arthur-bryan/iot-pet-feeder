@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 
 from app.api.v1.routes import config, feed, notifications, schedule, status, users
 from app.core.config import settings
-from app.core.exceptions import sanitize_error, SecurityException
+from app.core.exceptions import SecurityError, sanitize_error
 
 TAGS_METADATA = [
     {
@@ -91,8 +91,8 @@ def health_check():
     return {"status": "ok", "message": "Smart Pet Feeder API is running"}
 
 
-@app.exception_handler(SecurityException)
-async def security_exception_handler(request: Request, exc: SecurityException):
+@app.exception_handler(SecurityError)
+async def security_exception_handler(request: Request, exc: SecurityError):
     """Handle security exceptions with sanitized messages."""
     return JSONResponse(
         status_code=exc.status_code,

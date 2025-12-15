@@ -661,6 +661,9 @@ void handleButtonPress() {
     if ((millis() - lastDebounce) > 50) {
         if (reading == LOW && !buttonPressed) {
             buttonPressed = true;
+            totalFeedCycles = DEFAULT_FEED_CYCLES;
+            currentFeedCycle = 0;
+            activeFeedTrigger = "button";
             activateFeeder("button");
         } else if (reading == HIGH && buttonPressed) {
             buttonPressed = false;

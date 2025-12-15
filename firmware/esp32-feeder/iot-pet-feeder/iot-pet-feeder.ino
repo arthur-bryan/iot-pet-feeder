@@ -432,8 +432,8 @@ void onMqttMessage(String &topic, String &payload) {
         if (!error && doc.containsKey("command")) {
             const char* cmd = doc["command"];
             if (strcmp(cmd, "FEED_NOW") == 0) {
-                int cycles = doc.containsKey("cycles") ? doc["cycles"].as<int>() : DEFAULT_FEED_CYCLES;
-                const char* trigger = doc.containsKey("trigger") ? doc["trigger"].as<const char*>() : "api";
+                int cycles = doc.containsKey("feed_cycles") ? doc["feed_cycles"].as<int>() : DEFAULT_FEED_CYCLES;
+                const char* trigger = doc.containsKey("mode") ? doc["mode"].as<const char*>() : "api";
                 activeFeedRequestedBy = doc.containsKey("requested_by") ? doc["requested_by"].as<String>() : "api_user";
                 if (cycles < 1 || cycles > 10) cycles = DEFAULT_FEED_CYCLES;
 

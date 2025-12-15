@@ -46,6 +46,32 @@ class TestProductionHardwareAdapter:
 
     @patch.dict(os.environ, {
         'IOT_ENDPOINT': 'test-endpoint.iot.aws',
+        'IOT_THING_ID': 'test-thing',
+        'IOT_PUBLISH_TOPIC': 'petfeeder/commands'
+    })
+    @patch('app.core.hardware_adapter.boto3')
+    @pytest.mark.asyncio
+    async def test_trigger_feed_with_cycles(self, mock_boto3):
+        """Test trigger_feed with feed_cycles parameter."""
+        mock_client = MagicMock()
+        mock_boto3.client.return_value = mock_client
+
+        from app.core.hardware_adapter import ProductionHardwareAdapter
+        adapter = ProductionHardwareAdapter()
+        result = await adapter.trigger_feed('test_user', 'scheduled', feed_cycles=3)
+
+        assert result['status'] == 'sent'
+        mock_client.publish.assert_called_once()
+
+        # Verify feed_cycles was included in the command
+        call_args = mock_client.publish.call_args
+        import json
+        payload = json.loads(call_args[1]['payload'])
+        assert payload['feed_cycles'] == 3
+        assert payload['mode'] == 'scheduled'
+
+    @patch.dict(os.environ, {
+        'IOT_ENDPOINT': 'test-endpoint.iot.aws',
         'IOT_THING_ID': 'test-thing'
     })
     @patch('app.core.hardware_adapter.boto3')

@@ -78,6 +78,7 @@ const char* activeFeedTrigger = nullptr;
 String activeFeedRequestedBy = "";
 char currentFeedId[37] = {0};
 float weightBeforeFeed = -1.0;
+float weightAfterDispense = -1.0;
 float pendingWeightBefore = -1.0;
 unsigned long pendingWeightStartTime = 0;
 bool waitingForWeightStabilization = false;
@@ -553,7 +554,9 @@ void publishFeedEvent(const char* trigger, const char* status) {
             doc["weight_before_g"] = round(w * 10.0) / 10.0;
         }
     } else if (strcmp(status, "completed") == 0 && scaleInitialized) {
-        float w = getWeight();
+        // Use pre-captured weight if available (manual/API feeds)
+        // Otherwise capture now (consumption/refill events)
+        float w = (weightAfterDispense >= 0.0) ? weightAfterDispense : getWeight();
         if (w >= 0.0) {
             doc["weight_after_g"] = round(w * 10.0) / 10.0;
         }
@@ -573,6 +576,7 @@ void activateFeeder(const char* trigger) {
     if (servoState == CLOSED) {
         generateFeedId(currentFeedId);
         Serial.printf("Feed ID: %s\n", currentFeedId);
+        weightAfterDispense = -1.0;  // Reset for new feed
         servoState = OPENING;
         servoMoveStartTime = millis();
         publishDeviceStatus("Feeder opening", trigger);
@@ -608,6 +612,16 @@ void updateServoState() {
         }
 
         case OPEN:
+            // Capture weight at optimal time: SERVO_OPEN_HOLD_DURATION_MS + 500ms
+            if (now - servoMoveStartTime >= (SERVO_OPEN_HOLD_DURATION_MS + 500) &&
+                weightAfterDispense < 0.0 && scaleInitialized) {
+                float w = getWeight();
+                if (w >= 0.0) {
+                    weightAfterDispense = w;
+                    Serial.printf("Weight after dispense captured: %.1fg\n", weightAfterDispense);
+                }
+            }
+
             if (now - servoMoveStartTime >= SERVO_OPEN_HOLD_DURATION_MS) {
                 servoState = CLOSING;
                 servoMoveStartTime = now;
@@ -629,6 +643,7 @@ void updateServoState() {
                     currentFeedCycle++;
                     if (currentFeedCycle < totalFeedCycles) {
                         delay(500);
+                        weightAfterDispense = -1.0;  // Reset for next cycle
                         servoState = OPENING;
                         servoMoveStartTime = millis();
                         publishDeviceStatus("Multi-cycle feeding", activeFeedTrigger);
@@ -639,6 +654,7 @@ void updateServoState() {
                         currentFeedCycle = 0;
                         activeFeedTrigger = nullptr;
                         weightBeforeFeed = -1.0;
+                        weightAfterDispense = -1.0;
                     }
                 } else {
                     publishDeviceStatus("Feed completed", "servo_event");

@@ -2,17 +2,40 @@
 
 ![IoT Pet Feeder](docs/pet-feeder.png)
 
+> A cloud-connected smart pet feeder with automated scheduling, weight tracking, and remote control via web dashboard. Built on AWS serverless infrastructure with ESP32 hardware.
+
+## Code Quality & Coverage
+
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/692d6cdfbb6b4b22a2fdb0562485f885)](https://app.codacy.com/gh/arthur-bryan/iot-pet-feeder/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+[![Codacy Badge](https://app.codacy.com/project/badge/Coverage/692d6cdfbb6b4b22a2fdb0562485f885)](https://app.codacy.com/gh/arthur-bryan/iot-pet-feeder/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage)
+[![Tests](https://img.shields.io/badge/tests-346%20passed-success)](backend/tests/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+## Technology Stack
+
+### Backend & Cloud
+[![AWS Lambda](https://img.shields.io/badge/AWS-Lambda-FF9900?logo=awslambda&logoColor=white)](https://aws.amazon.com/lambda/)
+[![AWS IoT Core](https://img.shields.io/badge/AWS-IoT%20Core-FF9900?logo=amazon-aws&logoColor=white)](https://aws.amazon.com/iot-core/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Python](https://img.shields.io/badge/Python-3.13-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![DynamoDB](https://img.shields.io/badge/AWS-DynamoDB-4053D6?logo=amazon-dynamodb&logoColor=white)](https://aws.amazon.com/dynamodb/)
+[![API Gateway](https://img.shields.io/badge/AWS-API%20Gateway-FF4F8B?logo=amazon-api-gateway&logoColor=white)](https://aws.amazon.com/api-gateway/)
+[![Cognito](https://img.shields.io/badge/AWS-Cognito-DD344C?logo=amazon-aws&logoColor=white)](https://aws.amazon.com/cognito/)
+
+### Frontend & Infrastructure
+[![AWS Amplify](https://img.shields.io/badge/AWS-Amplify-FF9900?logo=aws-amplify&logoColor=white)](https://aws.amazon.com/amplify/)
+[![Terraform](https://img.shields.io/badge/Terraform-7B42BC?logo=terraform&logoColor=white)](https://www.terraform.io/)
+[![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-F7DF1E?logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
+[![TailwindCSS](https://img.shields.io/badge/Tailwind-CSS-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+
+### Hardware & IoT
+[![ESP32](https://img.shields.io/badge/ESP32-WROOM--32U-E7352C?logo=espressif&logoColor=white)](https://www.espressif.com/en/products/socs/esp32)
+[![MQTT](https://img.shields.io/badge/Protocol-MQTT-660066?logo=mqtt&logoColor=white)](https://mqtt.org/)
+[![Arduino](https://img.shields.io/badge/Arduino-IDE-00979D?logo=arduino&logoColor=white)](https://www.arduino.cc/)
+
 ## System Architecture
 
 ![Architecture Diagram](docs/diagrams/iot-pet-feeder.png)
-
-[![AWS IoT](https://img.shields.io/badge/AWS-IoT%20Core-orange.svg)](https://aws.amazon.com/iot-core/)
-[![ESP32](https://img.shields.io/badge/Device-ESP32-blue.svg)](https://www.espressif.com/en/products/socs/esp32)
-[![Python](https://img.shields.io/badge/Backend-Python%203.13-green.svg)](https://www.python.org/)
-[![Terraform](https://img.shields.io/badge/IaC-Terraform-purple.svg)](https://www.terraform.io/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
-A cloud-connected smart pet feeder with automated scheduling, weight tracking, and remote control via web dashboard. Built on AWS serverless infrastructure with ESP32 hardware.
 
 ---
 
@@ -28,29 +51,19 @@ A cloud-connected smart pet feeder with automated scheduling, weight tracking, a
 
 ---
 
-## Technology Stack
+## Hardware Components
 
-**Hardware:**
-- ESP32-WROOM-32U microcontroller
-- MG90S servo motor
-- HX711 load cell amplifier + 1kg load cell
-- HW-131 power supply (5V/2A)
-- Push button, LEDs, resistors
-
-**Backend:**
-- AWS Lambda (Python 3.13 + FastAPI)
-- AWS IoT Core (MQTT)
-- API Gateway + Cognito
-- DynamoDB
-- EventBridge, SNS, SES
-
-**Frontend:**
-- Vanilla JavaScript + Tailwind CSS
-- AWS Amplify (hosting + CI/CD)
-
-**Infrastructure:**
-- Terraform
-- Region: **us-east-2**
+| Component | Specification | Quantity |
+|-----------|---------------|----------|
+| Microcontroller | ESP32-WROOM-32U | 1 |
+| Servo Motor | MG90S (5V, 180°) | 1 |
+| Load Cell | 1kg with HX711 amplifier | 1 |
+| Power Supply | HW-131 5V/2A | 1 |
+| Push Button | Momentary switch | 1 |
+| LEDs | Red + Green (3mm/5mm) | 2 |
+| Resistors | 220Ω | 2 |
+| Breadboards | Half-size or full-size | 2 |
+| Jumper Wires | Male-to-male, male-to-female | ~20 |
 
 ---
 
@@ -69,20 +82,6 @@ A cloud-connected smart pet feeder with automated scheduling, weight tracking, a
 
 **GitHub:**
 - Personal access token with `repo` and `admin:repo_hook` permissions
-
-**Hardware Components:**
-
-| Component | Specification | Quantity |
-|-----------|---------------|----------|
-| ESP32 Board | ESP32-WROOM-32U | 1 |
-| Servo Motor | MG90S (5V, 180°) | 1 |
-| Load Cell | 1kg with HX711 amplifier | 1 |
-| Power Supply | HW-131 5V/2A | 1 |
-| Push Button | Momentary switch | 1 |
-| LEDs | Red + Green (3mm/5mm) | 2 |
-| Resistors | 220Ω | 2 |
-| Breadboards | Half-size or full-size | 2 |
-| Jumper Wires | Male-to-male, male-to-female | ~20 |
 
 ---
 

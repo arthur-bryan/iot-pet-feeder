@@ -200,7 +200,8 @@ def trigger_scheduled_feed(schedule_id: str, feed_cycles: int, requested_by: str
         # Create feed request with mode="scheduled"
         feed_request = FeedRequest(
             mode="scheduled",
-            requested_by=requested_by
+            requested_by=requested_by,
+            feed_cycles=feed_cycles
         )
 
         # Process feed - this will:

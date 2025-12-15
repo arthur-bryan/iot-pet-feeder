@@ -18,7 +18,7 @@ class HardwareAdapter(ABC):
     """Abstract base class for hardware interactions"""
 
     @abstractmethod
-    async def trigger_feed(self, requested_by: str, mode: str = "manual") -> dict[str, Any]:
+    async def trigger_feed(self, requested_by: str, mode: str = "manual", feed_cycles: int | None = None) -> dict[str, Any]:
         """Trigger a feed event (real or simulated)"""
         pass
 
@@ -47,7 +47,7 @@ class ProductionHardwareAdapter(HardwareAdapter):
         self.iot_topic = os.environ.get('IOT_PUBLISH_TOPIC', 'petfeeder/commands')
         self.thing_id = os.environ['IOT_THING_ID']
 
-    async def trigger_feed(self, requested_by: str, mode: str = "manual") -> dict[str, Any]:
+    async def trigger_feed(self, requested_by: str, mode: str = "manual", feed_cycles: int | None = None) -> dict[str, Any]:
         """Publish MQTT command to real ESP32"""
         command = {
             "command": "FEED_NOW",
@@ -55,6 +55,9 @@ class ProductionHardwareAdapter(HardwareAdapter):
             "mode": mode,
             "timestamp": datetime.utcnow().isoformat()
         }
+
+        if feed_cycles is not None:
+            command["feed_cycles"] = feed_cycles
 
         self.iot_client.publish(
             topic=self.iot_topic,

@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 class FeedRequest(BaseModel):
     mode: Literal["manual", "api", "scheduled"] = Field(default="api", description="How the feed was triggered: 'api' for web/app, 'manual' for physical button, 'scheduled' for scheduled feeds")
     requested_by: str = Field(default="manual", examples=["user@example.com"])
+    feed_cycles: int | None = Field(default=None, description="Number of feed cycles (overrides config if provided)")
 
 
 class FeedResponse(BaseModel):

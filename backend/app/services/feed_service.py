@@ -50,7 +50,8 @@ async def process_feed(request: FeedRequest) -> FeedResponse:
     # Demo: generates fake event and saves to DynamoDB
     result = await hardware.trigger_feed(
         requested_by=request.requested_by,
-        mode=request.mode
+        mode=request.mode,
+        feed_cycles=request.feed_cycles
     )
 
     # Determine status from result

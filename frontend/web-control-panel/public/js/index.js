@@ -254,6 +254,18 @@ function boostPolling() {
     startPolling();
 }
 
+// Rapid polling after manual feed - poll 5 times at 1-second intervals
+async function rapidPollAfterFeed() {
+    stopPolling();
+
+    for (let i = 0; i < 5; i++) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        await pollStatus();
+    }
+
+    boostPolling();
+}
+
 function toggleTheme() {
     Theme.toggle(function() {
         if (typeof currentView !== 'undefined' && currentView === 'chart' && typeof weightChart !== 'undefined' && weightChart) {
@@ -681,8 +693,8 @@ async function sendFeedCommand() {
             fetchFeedHistory(1);
         }, 1000);
 
-        // Boost polling to catch status updates faster
-        boostPolling();
+        // Rapid polling to catch status updates (5 polls at 1-second intervals)
+        rapidPollAfterFeed();
 
     } catch (error) {
         feedMessage.textContent = `Failed to send command: ${error.message}`;

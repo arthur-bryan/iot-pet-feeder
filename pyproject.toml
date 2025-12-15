@@ -1,0 +1,111 @@
+[project]
+name = "iot-pet-feeder"
+version = "1.0.0"
+description = "Cloud-connected smart pet feeder with weight tracking, event logging, and automated scheduling"
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.12"
+authors = [
+    {name = "Arthur Bryan", email = "arthur.bryan@example.com"}
+]
+keywords = ["iot", "pet-feeder", "aws", "esp32", "serverless"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Home Automation",
+]
+
+[project.urls]
+Homepage = "https://github.com/arthur-bryan/iot-pet-feeder"
+Repository = "https://github.com/arthur-bryan/iot-pet-feeder"
+Documentation = "https://github.com/arthur-bryan/iot-pet-feeder#readme"
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["backend/tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",
+    "--tb=short",
+    "--strict-markers",
+    "-ra",
+]
+asyncio_mode = "auto"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
+
+[tool.coverage.run]
+source = ["backend/app"]
+branch = true
+omit = [
+    "backend/tests/*",
+    "*/__init__.py",
+    "backend/create_admin_user.py",
+    "backend/data_seeder.py",
+    "backend/demo_data_roller.py",
+    "backend/seed_demo_data.py",
+    "backend/lambda_handler.py",
+    "backend/app/services/simulator.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+]
+exclude_also = [
+    "^\\s*pass\\s*$",
+]
+show_missing = true
+fail_under = 100
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+src = ["backend"]
+
+[tool.ruff.lint]
+select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # Pyflakes
+    "I",     # isort
+    "B",     # flake8-bugbear
+    "C4",    # flake8-comprehensions
+    "UP",    # pyupgrade
+    "S",     # flake8-bandit (security)
+    "N",     # pep8-naming
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+    "S101",  # assert used (acceptable in tests)
+    "B008",  # function call in default argument (FastAPI uses this)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"backend/tests/*" = ["S101", "S105", "S106"]
+"backend/seed_demo_data.py" = ["S311"]
+"backend/demo_data_roller.py" = ["S311"]
+"backend/data_seeder.py" = ["S311"]
+"backend/app/services/simulator.py" = ["S311", "S110"]
+"backend/app/core/hardware_adapter.py" = ["S311"]
+"backend/app/api/v1/routes/users.py" = ["S110"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+exclude = ["backend/tests", "infra"]

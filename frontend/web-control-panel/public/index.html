@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;
+        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com;
+        font-src 'self' https://fonts.gstatic.com;
+        img-src 'self' data:;
+        connect-src 'self' https://*.amazonaws.com https://*.execute-api.*.amazonaws.com;
+        frame-ancestors 'none';
+        base-uri 'self';
+        form-action 'self';
+    ">
+    <title>Pet Feeder</title>
+    <script src="env-config.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/theme-init.js"></script>
+    <script src="https://cdn.tailwindcss.com/3.4.1"></script>
+    <script src="js/tailwind-config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js" crossorigin="anonymous"></script>
+</head>
+<body class="font-inter antialiased bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors">
+
+    <!-- Header -->
+    <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40 backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 transition-colors">
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4">
+            <div class="flex justify-between items-center gap-2">
+                <div class="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink">
+                    <div class="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center flex-shrink-0" role="img" aria-label="Pet Feeder Logo">
+                        <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="currentColor" viewBox="0 0 48.839 48.839" aria-hidden="true">
+                            <path d="M39.041,36.843c2.054,3.234,3.022,4.951,3.022,6.742c0,3.537-2.627,5.252-6.166,5.252c-1.56,0-2.567-0.002-5.112-1.326c0,0-1.649-1.509-5.508-1.354c-3.895-0.154-5.545,1.373-5.545,1.373c-2.545,1.323-3.516,1.309-5.074,1.309c-3.539,0-6.168-1.713-6.168-5.252c0-1.791,0.971-3.506,3.024-6.742c0,0,3.881-6.445,7.244-9.477c2.43-2.188,5.973-2.18,5.973-2.18h1.093v-0.001c0,0,3.698-0.009,5.976,2.181C35.059,30.51,39.041,36.844,39.041,36.843z M16.631,20.878c3.7,0,6.699-4.674,6.699-10.439S20.331,0,16.631,0S9.932,4.674,9.932,10.439S12.931,20.878,16.631,20.878z M10.211,30.988c2.727-1.259,3.349-5.723,1.388-9.971s-5.761-6.672-8.488-5.414s-3.348,5.723-1.388,9.971C3.684,29.822,7.484,32.245,10.211,30.988z M32.206,20.878c3.7,0,6.7-4.674,6.7-10.439S35.906,0,32.206,0s-6.699,4.674-6.699,10.439C25.507,16.204,28.506,20.878,32.206,20.878z M45.727,15.602c-2.728-1.259-6.527,1.165-8.488,5.414s-1.339,8.713,1.389,9.972c2.728,1.258,6.527-1.166,8.488-5.414S48.455,16.861,45.727,15.602z"/>
+                        </svg>
+                    </div>
+                    <div class="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                        <h1 class="text-base sm:text-xl font-semibold text-gray-900 dark:text-white truncate">Pet Feeder</h1>
+                        <span id="demoBadge" class="hidden px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs font-semibold text-orange-700 dark:text-orange-300 bg-orange-100 dark:bg-orange-900/30 border border-orange-300 dark:border-orange-700 rounded-lg whitespace-nowrap">
+                            DEMO
+                        </span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1 sm:gap-2 md:gap-4 flex-shrink-0">
+                    <!-- User Info (shown when authenticated) -->
+                    <div id="userInfo" class="hidden md:flex items-center gap-2 sm:gap-3 pr-2 sm:pr-3 border-r border-gray-300 dark:border-gray-600">
+                        <span id="user-email" class="text-xs sm:text-sm text-gray-700 dark:text-gray-300 font-medium hidden lg:inline truncate max-w-[150px]"></span>
+                        <button id="adminPanelButton" class="hidden text-xs px-2 sm:px-3 py-1 sm:py-1.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/40 font-medium transition-colors whitespace-nowrap" title="Admin Panel">
+                            Admin
+                        </button>
+                        <button id="logoutButton" class="text-xs px-2 sm:px-3 py-1 sm:py-1.5 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 font-medium transition-colors whitespace-nowrap" title="Logout">
+                            Logout
+                        </button>
+                    </div>
+
+                    <!-- Mobile User Menu Button -->
+                    <div id="mobileUserMenu" class="hidden md:hidden">
+                        <button id="logoutButtonMobile" class="p-2 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors" title="Logout" aria-label="Logout">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Schedules Button -->
+                    <button id="schedulesButton" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex-shrink-0" title="Manage schedules" aria-label="Manage schedules">
+                        <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </button>
+
+                    <!-- Refresh Button -->
+                    <button id="refreshButton" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0" title="Refresh all data" aria-label="Refresh all data">
+                        <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                    </button>
+
+                    <!-- Theme Toggle Button -->
+                    <button id="themeToggleButton" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex-shrink-0" title="Toggle theme" aria-label="Toggle dark mode">
+                        <svg id="sunIcon" class="w-5 h-5 text-gray-600 dark:text-gray-400 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                        </svg>
+                        <svg id="moonIcon" class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                        </svg>
+                    </button>
+
+                    <!-- Settings Button -->
+                    <button id="settingsButton" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex-shrink-0" title="Settings" aria-label="Settings">
+                        <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
+
+        <!-- Status Overview Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+
+            <!-- Device Status Card -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6 hover:shadow-md transition-all">
+                <div class="flex items-center justify-between mb-3 sm:mb-4">
+                    <h3 class="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">Device Status</h3>
+                    <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                </div>
+                <p id="deviceStatus" class="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white mb-1">Loading...</p>
+                <p id="statusMessage" class="text-xs text-gray-500 dark:text-gray-400"></p>
+            </div>
+
+            <!-- Current Weight Card -->
+            <div class="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-2xl shadow-sm border border-indigo-100 dark:border-indigo-800 p-4 sm:p-6 hover:shadow-md transition-all">
+                <h3 class="text-xs sm:text-sm font-medium text-indigo-900 dark:text-indigo-300 mb-3 sm:mb-4">Current Weight</h3>
+                <div class="flex items-baseline gap-2">
+                    <span id="currentWeight" class="text-3xl sm:text-4xl font-bold text-indigo-600 dark:text-indigo-400">--</span>
+                    <span class="text-base sm:text-lg text-indigo-400 dark:text-indigo-500 font-medium">g</span>
+                </div>
+            </div>
+
+            <!-- Quick Feed Card -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6 hover:shadow-md transition-all">
+                <h3 class="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400 mb-3 sm:mb-4">Quick Feed</h3>
+                <button id="feedButton" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold py-3 sm:py-3.5 px-4 rounded-xl hover:from-indigo-700 hover:to-purple-700 active:scale-95 transition-all duration-200 shadow-lg shadow-indigo-500/30 dark:shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none text-sm sm:text-base">
+                    Feed Now
+                </button>
+                <p id="feedMessage" class="text-xs text-gray-600 dark:text-gray-400 mt-3 min-h-[1rem]"></p>
+            </div>
+        </div>
+
+        <!-- Feeding History Section -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6 transition-colors">
+            <!-- Header with View Controls -->
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 sm:mb-6">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Feeding History</h2>
+
+                <!-- View Switcher -->
+                <div class="flex items-center gap-3">
+                    <!-- View Type Dropdown -->
+                    <select id="viewTypeSelect" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        <option value="table">Table View</option>
+                        <option value="chart">Weight Chart</option>
+                    </select>
+
+                    <!-- Arrow Navigation -->
+                    <div class="flex items-center gap-1">
+                        <button id="prevViewButton" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" title="Previous view">
+                            <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                            </svg>
+                        </button>
+                        <button id="nextViewButton" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" title="Next view">
+                            <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Time Range Filters (visible only in chart view) -->
+            <div id="timeRangeFilters" class="hidden mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                    <!-- Quick Time Range Dropdown -->
+                    <div class="flex items-center gap-2">
+                        <label for="quickTimeRange" class="text-xs font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap">Time Range:</label>
+                        <select id="quickTimeRange" class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent min-w-[140px]">
+                            <optgroup label="Recent">
+                                <option value="15m">Last 15 Minutes</option>
+                                <option value="30m">Last 30 Minutes</option>
+                                <option value="1h">Last Hour</option>
+                                <option value="3h">Last 3 Hours</option>
+                                <option value="6h">Last 6 Hours</option>
+                                <option value="12h">Last 12 Hours</option>
+                            </optgroup>
+                            <optgroup label="Days">
+                                <option value="24h" selected>Today (24h)</option>
+                                <option value="48h">Last 2 Days</option>
+                                <option value="7d">Last Week</option>
+                            </optgroup>
+                            <optgroup label="Longer">
+                                <option value="30d">Last Month</option>
+                                <option value="90d">Last 3 Months</option>
+                            </optgroup>
+                        </select>
+                    </div>
+
+                    <!-- Custom Range Toggle -->
+                    <button id="toggleCustomRange" class="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        Custom Range
+                    </button>
+                </div>
+
+                <!-- Custom Time Range (hidden by default) -->
+                <div id="customRangeContainer" class="hidden mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <input type="datetime-local" id="customStartTime" class="px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                            <span class="text-xs text-gray-500 dark:text-gray-400">to</span>
+                            <input type="datetime-local" id="customEndTime" class="px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                            <button id="applyCustomRange" class="px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">Apply</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Event Statistics -->
+                <div id="eventStats" class="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <!-- Total Events -->
+                    <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-600">
+                        <div class="flex items-center gap-2 mb-1">
+                            <svg class="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                            </svg>
+                            <span class="text-xs font-medium text-gray-600 dark:text-gray-400">Total Events</span>
+                        </div>
+                        <p id="totalEventsCount" class="text-2xl font-bold text-gray-900 dark:text-white">0</p>
+                    </div>
+
+                    <!-- Manual Feeds -->
+                    <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-lg p-3 border border-blue-200 dark:border-blue-700">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-base">🍽️</span>
+                            <span class="text-xs font-medium text-blue-700 dark:text-blue-300">Manual Feeds</span>
+                        </div>
+                        <p id="manualFeedCount" class="text-2xl font-bold text-blue-900 dark:text-blue-100">0</p>
+                    </div>
+
+                    <!-- Consumption Events -->
+                    <div class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-lg p-3 border border-green-200 dark:border-green-700">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-base">🐾</span>
+                            <span class="text-xs font-medium text-green-700 dark:text-green-300">Pet Ate</span>
+                        </div>
+                        <p id="consumptionCount" class="text-2xl font-bold text-green-900 dark:text-green-100">0</p>
+                    </div>
+
+                    <!-- Refill Events -->
+                    <div class="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-lg p-3 border border-purple-200 dark:border-purple-700">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-base">🔄</span>
+                            <span class="text-xs font-medium text-purple-700 dark:text-purple-300">Refills</span>
+                        </div>
+                        <p id="refillCount" class="text-2xl font-bold text-purple-900 dark:text-purple-100">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table View Container -->
+            <div id="tableViewContainer">
+                <!-- Mobile Card View -->
+                <div id="eventsContainer" class="block md:hidden space-y-3">
+                    <div class="py-8 text-center text-sm text-gray-500 dark:text-gray-400" id="loadingEvents">Loading feeding history...</div>
+                </div>
+
+                <!-- Desktop Table View -->
+                <div class="hidden md:block overflow-x-auto -mx-6 px-6">
+                    <table id="historyTable" class="min-w-full">
+                        <thead>
+                            <tr class="border-b border-gray-200 dark:border-gray-700">
+                                <th class="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider pb-3">Timestamp</th>
+                                <th class="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider pb-3">Event Type</th>
+                                <th class="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider pb-3">Trigger</th>
+                                <th class="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider pb-3">Weight Change</th>
+                                <th class="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider pb-3">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="eventsContainerDesktop" class="divide-y divide-gray-100 dark:divide-gray-700">
+                            <tr>
+                                <td colspan="5" class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">Loading feeding history...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="flex items-center justify-between mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <button id="prevPageButton" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                        Previous
+                    </button>
+                    <span id="pageInfo" class="text-sm text-gray-700 dark:text-gray-300 font-medium">Page 1 of 1</span>
+                    <button id="nextPageButton" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                        Next
+                    </button>
+                </div>
+            </div>
+
+            <!-- Chart View Container -->
+            <div id="chartViewContainer" class="hidden">
+                <div class="relative h-[400px] sm:h-[500px]">
+                    <canvas id="weightChart"></canvas>
+                </div>
+                <div id="chartLoadingMessage" class="hidden absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+                    <div class="text-center">
+                        <svg class="animate-spin h-8 w-8 text-indigo-600 mx-auto mb-2" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Loading chart data...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal -->
+    <div id="messageModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 hidden p-4" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-sm w-full p-6 transform transition-all">
+            <h3 id="modalTitle" class="text-xl font-semibold text-gray-900 dark:text-white mb-3"></h3>
+            <p id="modalMessage" class="text-sm text-gray-600 dark:text-gray-300 mb-6"></p>
+            <button id="closeModalButton" class="w-full bg-indigo-600 text-white font-medium py-3 px-4 rounded-xl hover:bg-indigo-700 active:scale-95 transition-all">
+                OK
+            </button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/error-handler-init.js"></script>
+    <script>
+        // Show demo badge if in demo environment
+        (function() {
+            const environment = window.ENV?.VITE_ENVIRONMENT || '';
+            if (environment.toLowerCase() === 'demo') {
+                const demoBadge = document.getElementById('demoBadge');
+                if (demoBadge) {
+                    demoBadge.classList.remove('hidden');
+                }
+            }
+        })();
+    </script>
+    <!-- Login Container (shown when auth required) -->
+    <div id="login-container" class="hidden fixed inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center p-4 z-50">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-8">
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 48.839 48.839">
+                        <path d="M39.041,36.843c2.054,3.234,3.022,4.951,3.022,6.742c0,3.537-2.627,5.252-6.166,5.252c-1.56,0-2.567-0.002-5.112-1.326c0,0-1.649-1.509-5.508-1.354c-3.895-0.154-5.545,1.373-5.545,1.373c-2.545,1.323-3.516,1.309-5.074,1.309c-3.539,0-6.168-1.713-6.168-5.252c0-1.791,0.971-3.506,3.024-6.742c0,0,3.881-6.445,7.244-9.477c2.43-2.188,5.973-2.18,5.973-2.18h1.093v-0.001c0,0,3.698-0.009,5.976,2.181C35.059,30.51,39.041,36.844,39.041,36.843z M16.631,20.878c3.7,0,6.699-4.674,6.699-10.439S20.331,0,16.631,0S9.932,4.674,9.932,10.439S12.931,20.878,16.631,20.878z M10.211,30.988c2.727-1.259,3.349-5.723,1.388-9.971s-5.761-6.672-8.488-5.414s-3.348,5.723-1.388,9.971C3.684,29.822,7.484,32.245,10.211,30.988z M32.206,20.878c3.7,0,6.7-4.674,6.7-10.439S35.906,0,32.206,0s-6.699,4.674-6.699,10.439C25.507,16.204,28.506,20.878,32.206,20.878z M45.727,15.602c-2.728-1.259-6.527,1.165-8.488,5.414s-1.339,8.713,1.389,9.972c2.728,1.258,6.527-1.166,8.488-5.414S48.455,16.861,45.727,15.602z"/>
+                    </svg>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Welcome Back</h2>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">Sign in to access your Pet Feeder</p>
+            </div>
+
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <label for="loginEmail" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                    <input type="email" id="loginEmail" required class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="your@email.com">
+                </div>
+                <div>
+                    <label for="loginPassword" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
+                    <input type="password" id="loginPassword" required class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Enter your password">
+                </div>
+                <div id="loginError" class="hidden text-sm text-red-600 dark:text-red-400" role="alert" aria-live="assertive"></div>
+                <button type="submit" id="loginButton" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold py-3 px-4 rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all">
+                    Sign In
+                </button>
+                <div class="text-center">
+                    <button type="button" id="showRequestAccessButton" class="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium">
+                        Don't have an account? Request Access
+                    </button>
+                </div>
+            </form>
+
+            <!-- Request Access Form (hidden by default) -->
+            <form id="requestAccessForm" class="hidden space-y-4">
+                <div>
+                    <label for="requestFullName" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name</label>
+                    <input type="text" id="requestFullName" required class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="John Doe">
+                </div>
+                <div>
+                    <label for="requestEmail" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                    <input type="email" id="requestEmail" required class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="your@email.com">
+                </div>
+                <div id="requestAccessError" class="hidden text-sm text-red-600 dark:text-red-400" role="alert" aria-live="assertive"></div>
+                <div id="requestAccessSuccess" class="hidden text-sm text-green-600 dark:text-green-400" role="status" aria-live="polite"></div>
+                <button type="submit" id="requestAccessButton" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold py-3 px-4 rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all">
+                    Submit Request
+                </button>
+                <div class="text-center">
+                    <button type="button" id="backToLoginButton" class="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium">
+                        Back to Login
+                    </button>
+                </div>
+            </form>
+
+            <!-- Password Change Form (hidden by default) -->
+            <form id="passwordChangeForm" class="hidden space-y-4">
+                <p class="text-sm text-orange-600 dark:text-orange-400 mb-4">You must change your password on first login</p>
+                <div>
+                    <label for="newPassword" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">New Password</label>
+                    <input type="password" id="newPassword" required aria-describedby="passwordHint" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Enter new password">
+                    <p id="passwordHint" class="text-xs text-gray-500 dark:text-gray-400 mt-1">Min 8 characters, uppercase, lowercase, number</p>
+                </div>
+                <div>
+                    <label for="confirmPassword" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirm Password</label>
+                    <input type="password" id="confirmPassword" required class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Confirm new password">
+                </div>
+                <div id="passwordChangeError" class="hidden text-sm text-red-600 dark:text-red-400" role="alert" aria-live="assertive"></div>
+                <button type="submit" id="changePasswordButton" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold py-3 px-4 rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all">
+                    Change Password
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Wrap main content for auth control -->
+    <div id="app-container">
+        <!-- All existing content stays as-is -->
+    </div>
+
+    <script type="module" src="js/error-handler.js"></script>
+    <script type="module" src="js/theme.js"></script>
+    <script type="module" src="js/dom-utils.js"></script>
+    <script type="module" src="js/validation-utils.js"></script>
+    <script type="module" src="js/focus-trap.js"></script>
+    <script type="module" src="js/auth.js"></script>
+    <script type="module" src="js/timezone-utils.js"></script>
+    <script type="module" src="js/index.js"></script>
+    <script type="module">
+        // Initialize auth when page loads
+        document.addEventListener('DOMContentLoaded', async () => {
+            await auth.initAuth();
+
+            // Show user info and setup logout button if authenticated
+            const session = await auth.getCurrentSession();
+            if (session && session.email) {
+                const userInfo = document.getElementById('userInfo');
+                const mobileUserMenu = document.getElementById('mobileUserMenu');
+                const userEmail = document.getElementById('user-email');
+                const logoutButton = document.getElementById('logoutButton');
+                const logoutButtonMobile = document.getElementById('logoutButtonMobile');
+                const adminPanelButton = document.getElementById('adminPanelButton');
+
+                if (userInfo && userEmail) {
+                    userEmail.textContent = session.email;
+                    userInfo.classList.remove('hidden');
+                    userInfo.classList.add('flex');
+                }
+
+                if (mobileUserMenu) {
+                    mobileUserMenu.classList.remove('hidden');
+                }
+
+                // Setup logout button handlers
+                const handleLogout = () => {
+                    if (confirm('Are you sure you want to logout?')) {
+                        auth.logout();
+                    }
+                };
+
+                if (logoutButton) {
+                    logoutButton.addEventListener('click', handleLogout);
+                }
+
+                if (logoutButtonMobile) {
+                    logoutButtonMobile.addEventListener('click', handleLogout);
+                }
+
+                // Check if user is admin and show admin panel button
+                if (adminPanelButton && auth.isAuthEnabled()) {
+                    // Check admin status by trying to call admin endpoint
+                    try {
+                        const authHeaders = await auth.getAuthHeaders();
+                        const response = await fetch(`${window.ENV?.VITE_API_BASE_URL}/api/v1/users/pending`, {
+                            headers: authHeaders
+                        });
+                        if (response.ok) {
+                            // User is admin
+                            adminPanelButton.classList.remove('hidden');
+                            adminPanelButton.addEventListener('click', () => {
+                                window.location.href = 'admin.html';
+                            });
+                        }
+                    } catch (e) {
+                        // Not admin or error, don't show button
+                    }
+                }
+            }
+
+            // Request Access Form handlers
+            document.getElementById('showRequestAccessButton')?.addEventListener('click', () => {
+                document.getElementById('loginForm').classList.add('hidden');
+                document.getElementById('requestAccessForm').classList.remove('hidden');
+            });
+
+            document.getElementById('backToLoginButton')?.addEventListener('click', () => {
+                document.getElementById('requestAccessForm').classList.add('hidden');
+                document.getElementById('loginForm').classList.remove('hidden');
+                document.getElementById('requestAccessForm').reset();
+                document.getElementById('requestAccessError').classList.add('hidden');
+                document.getElementById('requestAccessSuccess').classList.add('hidden');
+            });
+
+            document.getElementById('requestAccessForm')?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const fullName = document.getElementById('requestFullName').value;
+                const email = document.getElementById('requestEmail').value;
+                const button = document.getElementById('requestAccessButton');
+                const error = document.getElementById('requestAccessError');
+                const success = document.getElementById('requestAccessSuccess');
+
+                button.disabled = true;
+                button.textContent = 'Submitting...';
+                error.classList.add('hidden');
+                success.classList.add('hidden');
+
+                try {
+                    const response = await fetch(`${window.ENV?.VITE_API_BASE_URL}/api/v1/users/request-access`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            email: email,
+                            full_name: fullName
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.detail || 'Request failed');
+                    }
+
+                    success.textContent = 'Access request submitted! An admin will review your request.';
+                    success.classList.remove('hidden');
+                    document.getElementById('requestAccessForm').reset();
+
+                    // Switch back to login after 3 seconds
+                    setTimeout(() => {
+                        document.getElementById('backToLoginButton').click();
+                    }, 3000);
+
+                } catch (err) {
+                    error.textContent = err.message || 'Failed to submit request';
+                    error.classList.remove('hidden');
+                } finally {
+                    button.disabled = false;
+                    button.textContent = 'Submit Request';
+                }
+            });
+
+            // Login form handler
+            document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('loginEmail').value;
+                const password = document.getElementById('loginPassword').value;
+                const button = document.getElementById('loginButton');
+                const error = document.getElementById('loginError');
+
+                button.disabled = true;
+                button.textContent = 'Signing in...';
+                error.classList.add('hidden');
+
+                const result = await auth.login(email, password);
+
+                if (result.success) {
+                    window.location.reload();
+                } else if (result.challenge === 'NEW_PASSWORD_REQUIRED') {
+                    // Show password change form
+                    document.getElementById('loginForm').classList.add('hidden');
+                    document.getElementById('passwordChangeForm').classList.remove('hidden');
+                    window.tempLoginData = { email, password, session: result.session };
+                } else {
+                    error.textContent = result.message || 'Login failed';
+                    error.classList.remove('hidden');
+                    button.disabled = false;
+                    button.textContent = 'Sign In';
+                }
+            });
+
+            // Password change form handler
+            document.getElementById('passwordChangeForm')?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const newPassword = document.getElementById('newPassword').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
+                const button = document.getElementById('changePasswordButton');
+                const error = document.getElementById('passwordChangeError');
+
+                if (newPassword !== confirmPassword) {
+                    error.textContent = 'Passwords do not match';
+                    error.classList.remove('hidden');
+                    return;
+                }
+
+                button.disabled = true;
+                button.textContent = 'Changing password...';
+                error.classList.add('hidden');
+
+                const result = await auth.changePassword(
+                    window.tempLoginData.email,
+                    window.tempLoginData.password,
+                    newPassword,
+                    window.tempLoginData.session
+                );
+
+                if (result.success) {
+                    window.location.reload();
+                } else {
+                    error.textContent = result.message || 'Password change failed';
+                    error.classList.remove('hidden');
+                    button.disabled = false;
+                    button.textContent = 'Change Password';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

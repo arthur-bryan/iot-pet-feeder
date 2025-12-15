@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com;
+        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com;
+        font-src 'self' https://fonts.gstatic.com;
+        img-src 'self' data:;
+        connect-src 'self' https://*.amazonaws.com https://*.execute-api.*.amazonaws.com;
+        frame-ancestors 'none';
+        base-uri 'self';
+        form-action 'self';
+    ">
+    <title>Feed Schedules - Pet Feeder</title>
+    <script src="env-config.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/theme-init.js"></script>
+    <script src="https://cdn.tailwindcss.com/3.4.1"></script>
+    <script src="js/tailwind-config.js"></script>
+</head>
+<body class="font-inter antialiased bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors">
+
+    <!-- Header -->
+    <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40 backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 transition-colors">
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4">
+            <div class="flex justify-between items-center gap-2">
+                <div class="flex items-center gap-2 sm:gap-4 min-w-0">
+                    <button id="backToDashboard" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex-shrink-0" title="Back to dashboard" aria-label="Back to dashboard">
+                        <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                        </svg>
+                    </button>
+                    <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+                        <div class="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center flex-shrink-0" role="img" aria-label="Feed Schedules">
+                            <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="currentColor" viewBox="0 0 390.126 390.125" aria-hidden="true">
+                                <path d="M132.64,177.859c31.162,0,56.508-34.014,56.508-75.834c0-41.817-25.347-75.841-56.508-75.841c-31.153,0-56.502,34.023-56.502,75.841C76.138,143.845,101.487,177.859,132.64,177.859z"/>
+                                <path d="M300.246,251.628c-1.159-1.579-2.27-3.068-2.864-4.348c-12.635-27.046-47.27-58.931-103.382-59.724l-2.159-0.012c-55.25,0-89.627,30.197-103.381,58.469c-0.475,0.967-1.52,2.222-2.627,3.549c-1.31,1.555-2.606,3.146-3.714,4.875c-11.619,18.075-17.543,38.426-16.669,57.299c0.916,20.037,9.305,36.131,23.581,45.312c5.768,3.705,11.992,5.572,18.522,5.572c13.465,0,25.793-7.584,40.079-16.368c9.083-5.598,18.465-11.374,28.886-15.697c1.168-0.385,5.954-0.973,13.781-0.973c9.307,0,15.991,0.828,17.419,1.321c10.173,4.491,19.107,10.382,27.748,16.068c13.247,8.731,25.755,16.97,39.326,16.97c5.824,0,11.469-1.537,16.795-4.563c29.382-16.693,34.979-62.492,12.484-102.088C302.942,255.303,301.597,253.448,300.246,251.628z"/>
+                                <path d="M252.796,177.859c31.147,0,56.499-34.014,56.499-75.834c0-41.817-25.352-75.841-56.499-75.841c-31.165,0-56.511,34.023-56.511,75.841C196.285,143.845,221.631,177.859,252.796,177.859z"/>
+                                <path d="M345.595,138.918c-24.975,0-44.521,25.901-44.521,58.967c0,33.051,19.558,58.955,44.521,58.955c24.961,0,44.531-25.904,44.531-58.955C390.126,164.82,370.568,138.918,345.595,138.918z"/>
+                                <path d="M89.048,197.885c0-33.065-19.558-58.967-44.522-58.967C19.561,138.918,0,164.82,0,197.885c0,33.051,19.561,58.955,44.526,58.955C69.491,256.84,89.048,230.936,89.048,197.885z"/>
+                            </svg>
+                        </div>
+                        <div class="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                            <h1 class="text-base sm:text-xl font-semibold text-gray-900 dark:text-white truncate">Feed Schedules</h1>
+                            <span id="demoBadge" class="hidden px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs font-semibold text-orange-700 dark:text-orange-300 bg-orange-100 dark:bg-orange-900/30 border border-orange-300 dark:border-orange-700 rounded-lg whitespace-nowrap">
+                                DEMO
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1 sm:gap-4 flex-shrink-0">
+                    <!-- User Info (shown when authenticated) -->
+                    <div id="userInfo" class="hidden items-center gap-2 sm:gap-3 pr-2 sm:pr-3 border-r border-gray-300 dark:border-gray-600">
+                        <span id="user-email" class="text-xs sm:text-sm text-gray-700 dark:text-gray-300 font-medium hidden md:inline truncate max-w-[150px]"></span>
+                        <button id="logoutButton" class="text-xs px-2 sm:px-3 py-1 sm:py-1.5 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 font-medium transition-colors whitespace-nowrap" title="Logout">
+                            Logout
+                        </button>
+                    </div>
+
+                    <button id="themeToggleButton" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" title="Toggle theme" aria-label="Toggle dark mode">
+                        <svg id="sunIcon" class="w-5 h-5 text-gray-600 dark:text-gray-400 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                        </svg>
+                        <svg id="moonIcon" class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- Action Bar -->
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Scheduled Feeds</h2>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage automatic feeding schedules</p>
+            </div>
+            <button id="addScheduleButton" class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold py-3 px-6 rounded-xl hover:from-indigo-700 hover:to-purple-700 active:scale-95 transition-all duration-200 shadow-lg shadow-indigo-500/30 dark:shadow-indigo-500/20 flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Add Schedule
+            </button>
+        </div>
+
+        <!-- Schedules List -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6 transition-colors">
+            <div id="schedulesContainer" class="space-y-3 sm:space-y-4">
+                <!-- Loading State -->
+                <div id="loadingSchedules" class="py-12 text-center">
+                    <svg class="animate-spin h-8 w-8 text-indigo-600 mx-auto mb-4" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Loading schedules...</p>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div id="paginationContainer" class="hidden flex items-center justify-between mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <button id="prevPageButton" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                    Previous
+                </button>
+                <span id="pageInfo" class="text-sm text-gray-700 dark:text-gray-300 font-medium">Page 1 of 1</span>
+                <button id="nextPageButton" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                    Next
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add/Edit Schedule Modal -->
+    <div id="scheduleModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 hidden p-4" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6 transform transition-all">
+            <div class="flex items-center justify-between mb-6">
+                <h3 id="modalTitle" class="text-xl font-semibold text-gray-900 dark:text-white">Add Schedule</h3>
+                <button id="closeModalButton" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" aria-label="Close modal">
+                    <svg class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <form id="scheduleForm" class="space-y-4">
+                <!-- Date Input -->
+                <div>
+                    <label for="scheduleDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date</label>
+                    <input type="date" id="scheduleDate" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                </div>
+
+                <!-- Time Input -->
+                <div>
+                    <label for="scheduleTime" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Time <span id="timezoneLabel" class="text-xs text-gray-500">(loading...)</span></label>
+                    <input type="time" id="scheduleTime" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                </div>
+
+                <!-- Feed Cycles Input -->
+                <div>
+                    <label for="feedCycles" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Feed Cycles</label>
+                    <input type="number" id="feedCycles" min="1" max="10" value="1" required aria-describedby="feedCyclesHint" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    <p id="feedCyclesHint" class="text-xs text-gray-500 dark:text-gray-400 mt-1">Number of times to dispense food (1-10)</p>
+                </div>
+
+                <!-- Recurrence Select -->
+                <div>
+                    <label for="recurrence" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Recurrence</label>
+                    <select id="recurrence" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        <option value="none">One-time</option>
+                        <option value="daily">Daily</option>
+                    </select>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="flex gap-3 pt-4">
+                    <button type="button" id="cancelButton" class="flex-1 px-4 py-3 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 font-medium transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" id="saveScheduleButton" class="flex-1 px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 font-medium transition-colors shadow-lg shadow-indigo-500/30 dark:shadow-indigo-500/20">
+                        Save Schedule
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 hidden p-4" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-sm w-full p-6 transform transition-all">
+            <h3 id="confirmTitle" class="text-xl font-semibold text-gray-900 dark:text-white mb-3"></h3>
+            <p id="confirmMessage" class="text-sm text-gray-600 dark:text-gray-300 mb-6"></p>
+            <div class="flex gap-3">
+                <button id="cancelConfirmButton" class="flex-1 px-4 py-3 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 font-medium transition-colors">
+                    Cancel
+                </button>
+                <button id="confirmActionButton" class="flex-1 px-4 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 font-medium transition-colors">
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Container (shown when auth required) -->
+    <div id="login-container" class="hidden fixed inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center p-4 z-50">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-8">
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 48.839 48.839">
+                        <path d="M39.041,36.843c2.054,3.234,3.022,4.951,3.022,6.742c0,3.537-2.627,5.252-6.166,5.252c-1.56,0-2.567-0.002-5.112-1.326c0,0-1.649-1.509-5.508-1.354c-3.895-0.154-5.545,1.373-5.545,1.373c-2.545,1.323-3.516,1.309-5.074,1.309c-3.539,0-6.168-1.713-6.168-5.252c0-1.791,0.971-3.506,3.024-6.742c0,0,3.881-6.445,7.244-9.477c2.43-2.188,5.973-2.18,5.973-2.18h1.093v-0.001c0,0,3.698-0.009,5.976,2.181C35.059,30.51,39.041,36.844,39.041,36.843z M16.631,20.878c3.7,0,6.699-4.674,6.699-10.439S20.331,0,16.631,0S9.932,4.674,9.932,10.439S12.931,20.878,16.631,20.878z M10.211,30.988c2.727-1.259,3.349-5.723,1.388-9.971s-5.761-6.672-8.488-5.414s-3.348,5.723-1.388,9.971C3.684,29.822,7.484,32.245,10.211,30.988z M32.206,20.878c3.7,0,6.7-4.674,6.7-10.439S35.906,0,32.206,0s-6.699,4.674-6.699,10.439C25.507,16.204,28.506,20.878,32.206,20.878z M45.727,15.602c-2.728-1.259-6.527,1.165-8.488,5.414s-1.339,8.713,1.389,9.972c2.728,1.258,6.527-1.166,8.488-5.414S48.455,16.861,45.727,15.602z"/>
+                    </svg>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Welcome Back</h2>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">Sign in to manage schedules</p>
+            </div>
+
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <label for="loginEmail" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                    <input type="email" id="loginEmail" required class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="your@email.com">
+                </div>
+                <div>
+                    <label for="loginPassword" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
+                    <input type="password" id="loginPassword" required class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Enter your password">
+                </div>
+                <div id="loginError" class="hidden text-sm text-red-600 dark:text-red-400"></div>
+                <button type="submit" id="loginButton" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold py-3 px-4 rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all">
+                    Sign In
+                </button>
+            </form>
+
+            <!-- Password Change Form (hidden by default) -->
+            <form id="passwordChangeForm" class="hidden space-y-4">
+                <p class="text-sm text-orange-600 dark:text-orange-400 mb-4">You must change your password on first login</p>
+                <div>
+                    <label for="newPassword" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">New Password</label>
+                    <input type="password" id="newPassword" required class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Enter new password">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Min 8 characters, uppercase, lowercase, number</p>
+                </div>
+                <div>
+                    <label for="confirmPassword" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirm Password</label>
+                    <input type="password" id="confirmPassword" required class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Confirm new password">
+                </div>
+                <div id="passwordChangeError" class="hidden text-sm text-red-600 dark:text-red-400"></div>
+                <button type="submit" id="changePasswordButton" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold py-3 px-4 rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all">
+                    Change Password
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/error-handler-init.js"></script>
+    <script>
+        // Show demo badge if in demo environment
+        (function() {
+            const environment = window.ENV?.VITE_ENVIRONMENT || '';
+            if (environment.toLowerCase() === 'demo') {
+                const demoBadge = document.getElementById('demoBadge');
+                if (demoBadge) {
+                    demoBadge.classList.remove('hidden');
+                }
+            }
+        })();
+    </script>
+    <script type="module" src="js/error-handler.js"></script>
+    <script type="module" src="js/theme.js"></script>
+    <script type="module" src="js/dom-utils.js"></script>
+    <script type="module" src="js/validation-utils.js"></script>
+    <script type="module" src="js/focus-trap.js"></script>
+    <script type="module" src="js/auth.js"></script>
+    <script type="module" src="js/timezone-utils.js"></script>
+    <script type="module" src="js/schedules.js"></script>
+    <script type="module">
+        // Setup logout button and user info
+        document.addEventListener('DOMContentLoaded', async () => {
+            const backButton = document.getElementById('backToDashboard');
+            if (backButton) {
+                backButton.addEventListener('click', () => {
+                    window.location.href = 'index.html';
+                });
+            }
+
+            const session = await auth.getCurrentSession();
+            if (session && session.email) {
+                const userInfo = document.getElementById('userInfo');
+                const userEmail = document.getElementById('user-email');
+                const logoutButton = document.getElementById('logoutButton');
+
+                if (userInfo && userEmail) {
+                    userEmail.textContent = session.email;
+                    userInfo.classList.remove('hidden');
+                    userInfo.classList.add('flex');
+                }
+
+                if (logoutButton) {
+                    logoutButton.addEventListener('click', () => {
+                        if (confirm('Are you sure you want to logout?')) {
+                            auth.logout();
+                        }
+                    });
+                }
+            }
+
+            // Login form handler
+            document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('loginEmail').value;
+                const password = document.getElementById('loginPassword').value;
+                const button = document.getElementById('loginButton');
+                const error = document.getElementById('loginError');
+
+                button.disabled = true;
+                button.textContent = 'Signing in...';
+                error.classList.add('hidden');
+
+                const result = await auth.login(email, password);
+
+                if (result.success) {
+                    window.location.reload();
+                } else if (result.challenge === 'NEW_PASSWORD_REQUIRED') {
+                    document.getElementById('loginForm').classList.add('hidden');
+                    document.getElementById('passwordChangeForm').classList.remove('hidden');
+                    window.tempLoginData = { email, password, session: result.session };
+                } else {
+                    error.textContent = result.message || 'Login failed';
+                    error.classList.remove('hidden');
+                    button.disabled = false;
+                    button.textContent = 'Sign In';
+                }
+            });
+
+            // Password change form handler
+            document.getElementById('passwordChangeForm')?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const newPassword = document.getElementById('newPassword').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
+                const button = document.getElementById('changePasswordButton');
+                const error = document.getElementById('passwordChangeError');
+
+                if (newPassword !== confirmPassword) {
+                    error.textContent = 'Passwords do not match';
+                    error.classList.remove('hidden');
+                    return;
+                }
+
+                button.disabled = true;
+                button.textContent = 'Changing password...';
+                error.classList.add('hidden');
+
+                const result = await auth.changePassword(
+                    window.tempLoginData.email,
+                    window.tempLoginData.password,
+                    newPassword,
+                    window.tempLoginData.session
+                );
+
+                if (result.success) {
+                    window.location.reload();
+                } else {
+                    error.textContent = result.message || 'Password change failed';
+                    error.classList.remove('hidden');
+                    button.disabled = false;
+                    button.textContent = 'Change Password';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

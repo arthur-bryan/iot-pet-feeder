@@ -1,0 +1,24 @@
+---
+engines:
+  markdownlint:
+    enabled: true
+    exclude_paths:
+      - "docs/**"
+      - "CLAUDE.md"
+      - "COGNITO_AUTH_IMPLEMENTATION.md"
+      - "PROJECT_GUIDELINES.md"
+      - "**/README*.md"
+  pmd:
+    enabled: true
+    exclude_paths:
+      - "**/tests/**"
+      - "**/*.test.js"
+
+exclude_paths:
+  - "docs/**"
+  - "**/node_modules/**"
+  - "**/coverage/**"
+  - "**/*.min.js"
+  - "**/dist/**"
+  - "**/build/**"
+  - "infra/terraform/.terraform/**"

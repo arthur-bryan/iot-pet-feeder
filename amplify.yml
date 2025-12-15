@@ -1,0 +1,28 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - nvm install 20
+        - nvm use 20
+        - cd frontend/web-control-panel
+        - |
+          cat > public/env-config.js << EOF
+          window.ENV = {
+            VITE_API_BASE_URL: "${VITE_API_BASE_URL}",
+            VITE_REGION: "${VITE_REGION}",
+            VITE_ENVIRONMENT: "${VITE_ENVIRONMENT}",
+            VITE_COGNITO_USER_POOL_ID: "${VITE_COGNITO_USER_POOL_ID}",
+            VITE_COGNITO_CLIENT_ID: "${VITE_COGNITO_CLIENT_ID}",
+            VITE_COGNITO_DOMAIN: "${VITE_COGNITO_DOMAIN}"
+          };
+          EOF
+        - cat public/env-config.js
+        - npm ci
+    build:
+      commands:
+        - npm run build
+  artifacts:
+    baseDirectory: frontend/web-control-panel/dist
+    files:
+      - '**/*'

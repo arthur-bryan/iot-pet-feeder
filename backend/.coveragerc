@@ -1,0 +1,21 @@
+[run]
+source = app
+omit =
+    # Demo-only simulation file
+    app/services/simulator.py
+    # Dead/unused code with bugs
+    app/crud/feed.py:save_schedule
+    app/services/feed_service.py:create_schedule
+
+[report]
+exclude_lines =
+    # Standard exclusions
+    pragma: no cover
+    if __name__ == .__main__.:
+    raise NotImplementedError
+    # Abstract methods
+    @abstractmethod
+    pass
+    # Type checking
+    if TYPE_CHECKING:
+fail_under = 100

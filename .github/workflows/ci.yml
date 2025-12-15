@@ -1,0 +1,108 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  test-backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: backend/requirements*.txt
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Run tests with coverage
+        run: |
+          python -m pytest tests/ --cov=app --cov-report=lcov:coverage.lcov -q
+
+      - name: Upload backend coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: backend/coverage.lcov
+          retention-days: 1
+
+  test-frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend/web-control-panel
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/web-control-panel/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests with coverage
+        run: npm run test:coverage
+
+      - name: Upload frontend coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: frontend/web-control-panel/coverage/lcov.info
+          retention-days: 1
+
+  upload-coverage:
+    needs: [test-backend, test-frontend]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download backend coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-coverage
+          path: backend
+
+      - name: Download frontend coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-coverage
+          path: frontend/web-control-panel/coverage
+
+      - name: Upload coverage to Codacy
+        env:
+          CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
+        if: env.CODACY_PROJECT_TOKEN != ''
+        run: |
+          # Upload backend coverage (partial)
+          bash <(curl -Ls https://coverage.codacy.com/get.sh) report \
+            --partial \
+            -l Python \
+            -r backend/coverage.lcov \
+            --force-coverage-parser lcov
+          # Upload frontend coverage (partial)
+          bash <(curl -Ls https://coverage.codacy.com/get.sh) report \
+            --partial \
+            -l Javascript \
+            -r frontend/web-control-panel/coverage/lcov.info \
+            --force-coverage-parser lcov
+          # Finalize coverage upload
+          bash <(curl -Ls https://coverage.codacy.com/get.sh) final

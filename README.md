@@ -1,6 +1,6 @@
 # IoT Pet Feeder
 
-![IoT Pet Feeder](docs/pet-feeder.jpg)
+![IoT Pet Feeder](docs/pet-feeder.png)
 
 ## System Architecture
 

@@ -27,7 +27,7 @@ const int LOADCELL_DOUT_PIN = 13;
 const int LOADCELL_SCK_PIN = 14;
 
 // Hardware Settings
-const int SERVO_ANGLE_OPEN = 60;
+const int SERVO_ANGLE_OPEN = 90;
 const int SERVO_ANGLE_CLOSED = 0;
 const unsigned long SERVO_SWEEP_DURATION_MS = 150;
 unsigned long SERVO_OPEN_HOLD_DURATION_MS = 3000;
